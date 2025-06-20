@@ -72,15 +72,18 @@ src/
 │   ├── session-broker/   # Orchestrateur de sessions
 │   ├── agent-factory/    # Factory des agents directeurs
 │   └── agent-engine/     # Moteur XState
-├── interfaces/           # Interfaces abstraites
-├── implementations/      # Implémentations concrètes
+├── interfaces/           # Interfaces abstraites (IDatabaseService, etc.)
+├── implementations/      # Implémentations concrètes (JSON, PostgreSQL, etc.)
 ├── api/                  # Contrôleurs REST
-├── dto/                  # Data Transfer Objects
+├── dto/                  # Data Transfer Objects (types partagés)
 └── cli/                  # Interface en ligne de commande
     ├── commands/         # Commandes CLI
     ├── templates/        # Templates de génération
     └── utils/            # Utilitaires CLI
+data/                     # Base de données JSON locale (MVP)
 ```
+
+**Note** : Toute la documentation est intégrée directement dans le code TypeScript via JSDoc. Utilisez votre IDE pour accéder à la documentation des types et interfaces.
 
 ## CLI
 
