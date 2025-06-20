@@ -39,6 +39,7 @@ program
     console.log(chalk.green('✅ CLI Directive fonctionne correctement !'));
     console.log(chalk.blue('Version:'), '1.0.0');
     console.log(chalk.blue('Status:'), 'Configuration phase 1.3 completée');
+    console.log(chalk.yellow('🔗 Mode:'), 'Développement avec npm link');
   });
 
 // Parse command line arguments

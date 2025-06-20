@@ -22,7 +22,9 @@
     "cli": "node dist/cli/index.js",
     "package": "npm run build:cli && npm pack",
     "package:global": "npm run build:cli && npm pack && npm install -g ./directive-core-*.tgz",
+    "link:dev": "npm run build:cli && npm link",
     "unlink": "npm unlink -g",
+    "dev:cli": "npm run build:cli && npm link && echo '✅ CLI mise à jour et linkée globalement'",
     "prepublishOnly": "npm run build:cli"
   },
   "repository": {
