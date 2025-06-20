@@ -99,9 +99,9 @@ async function collectProjectInfo(projectName?: string, options?: Partial<InitOp
       message: 'Database type:',
       choices: [
         {
-          name: 'JSON (Local files with LowDB) - Recommended for development',
+          name: 'JSON (Local files) - Recommended for development',
           value: 'json',
-          short: 'JSON/LowDB'
+          short: 'JSON'
         },
         {
           name: 'MongoDB (External database) - Implementation coming soon',
@@ -155,7 +155,7 @@ async function createProjectStructure(projectInfo: InitOptions): Promise<void> {
     `${projectInfo.name}/agents`
   ];
 
-  // Ajouter data/ seulement pour JSON/LowDB
+  // Ajouter data/ seulement pour JSON local
   if (projectInfo.database === 'json') {
     directories.push(`${projectInfo.name}/data`);
   }
@@ -217,7 +217,7 @@ async function generatePackageJson(projectPath: string, projectInfo: InitOptions
   // Ajouter des dépendances spécifiques selon le type de base de données
   const databaseDependencies: Record<string, Record<string, string>> = {
     json: {
-      "lowdb": "^7.0.1"
+      // No additional dependencies needed for JSON files
     },
     mongodb: {
       "mongodb": "^6.0.0",
@@ -379,7 +379,7 @@ This is a **Directive** project that orchestrates AI agents using state machines
 ${projectInfo.name}/
 ├── agents/                    # AI agents directory (currently empty)
 │   └── .gitkeep              # Placeholder file
-├── data/                     # Local JSON database (LowDB)${projectInfo.database !== 'json' ? ' [Not used with current DB]' : ''}
+├── data/                     # Local JSON database${projectInfo.database !== 'json' ? ' [Not used with current DB]' : ''}
 ├── directive-conf.ts         # Directive configuration
 ├── package.json              # Project dependencies
 ├── tsconfig.json             # TypeScript configuration
@@ -518,7 +518,7 @@ logs/
 *.log
 `;
 
-  // Ajouter exclusions spécifiques pour JSON/LowDB
+  // Ajouter exclusions spécifiques pour JSON local
   if (projectInfo.database === 'json') {
     gitignore += `
 # Local JSON Database
@@ -558,7 +558,7 @@ async function installDependencies(projectName: string): Promise<void> {
  */
 function displaySuccessMessage(projectInfo: InitOptions): void {
   const databaseMessages = {
-    json: chalk.green('✅ Local JSON database configured (LowDB)'),
+    json: chalk.green('✅ Local JSON database configured'),
     mongodb: chalk.yellow('⚠️  MongoDB connection configured - make sure MongoDB is running'),
     postgresql: chalk.yellow('⚠️  PostgreSQL connection configured - make sure PostgreSQL is running')
   };
@@ -636,7 +636,7 @@ POSTGRES_PASSWORD=directive
  */
 function getDatabaseDescription(dbType: string): string {
   const descriptions: Record<string, string> = {
-    json: 'JSON/LowDB (local file-based)',
+    json: 'JSON files (local file-based)',
     mongodb: 'MongoDB (disabled: not yet implemented)',
     postgresql: 'PostgreSQL (disabled: not yet implemented)'
   };
@@ -648,7 +648,7 @@ function getDatabaseDescription(dbType: string): string {
  */
 function getDatabaseSetupInstructions(dbType: string): string {
   const instructions: Record<string, string> = {
-    json: `Your project uses **LowDB** with JSON files for local development.
+    json: `Your project uses **JSON files** for local development.
 - Database files are stored in the \`data/\` directory
 - No additional setup required - just run \`npm install\``,
     

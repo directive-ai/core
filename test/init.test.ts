@@ -323,7 +323,7 @@ describe('Commande directive init', () => {
   });
 
   describe('Choix de base de données', () => {
-    it('devrait créer un projet avec JSON/LowDB par défaut', async () => {
+    it('devrait créer un projet avec JSON par défaut', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
       const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
@@ -340,11 +340,11 @@ describe('Commande directive init', () => {
       expect(configContent).toContain("'type': 'json'");
       expect(configContent).toContain("'dataDir': './data'");
 
-      // Vérifier les dépendances
+      // Vérifier les dépendances (JSON n'a pas de dépendances spéciales)
       const packageJsonPath = path.join(testProjectPath, 'package.json');
       const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
       const packageJson = JSON.parse(packageJsonContent);
-      expect(packageJson.devDependencies).toHaveProperty('lowdb');
+      expect(packageJson.devDependencies).toHaveProperty('@directive/core');
     });
 
     it('devrait créer un projet avec MongoDB quand spécifié', async () => {
@@ -380,7 +380,6 @@ describe('Commande directive init', () => {
       const packageJson = JSON.parse(packageJsonContent);
       expect(packageJson.devDependencies).toHaveProperty('mongodb');
       expect(packageJson.devDependencies).toHaveProperty('@types/mongodb');
-      expect(packageJson.devDependencies).not.toHaveProperty('lowdb');
     });
 
     it('devrait créer un projet avec PostgreSQL quand spécifié', async () => {
