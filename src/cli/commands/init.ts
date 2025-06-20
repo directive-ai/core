@@ -118,7 +118,11 @@ async function collectProjectInfo(projectName?: string, options?: Partial<InitOp
     });
   }
 
-  const answers = await inquirer.prompt(questions);
+  // Si toutes les options sont fournies, pas besoin de prompt
+  let answers: any = {};
+  if (questions.length > 0) {
+    answers = await inquirer.prompt(questions);
+  }
 
   return {
     name: projectName || answers.name,

@@ -4,7 +4,7 @@ export {
   ResponseFormat,
   AgentContext,
   AgentDocument
-} from './agent-response.dto.js';
+} from './agent-response.dto';
 
 // Session Types
 export {
@@ -12,7 +12,7 @@ export {
   SessionState,
   ConversationEntry,
   SessionStatus
-} from './session.dto.js';
+} from './session.dto';
 
 // API Types
 export {
@@ -23,22 +23,22 @@ export {
   AgentMetadata,
   RegisteredAgent,
   HealthStatus
-} from './api.dto.js';
+} from './api.dto';
 
 // Agent Types
 export {
   AgentRegistration
-} from './agent.dto.js';
+} from './agent.dto';
 
 // Application Types
 export {
   Application,
   CreateApplicationRequest,
   UpdateApplicationRequest
-} from './application.dto.js';
+} from './application.dto';
 
 // IAM Types
 export {
   UserContext,
   SessionAuthContext
-} from './iam.dto.js'; 
+} from './iam.dto'; 

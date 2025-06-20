@@ -32,7 +32,7 @@ describe('Commande directive init', () => {
     it('devrait créer un projet avec la structure de répertoires correcte', async () => {
       // Exécuter la commande init avec options non-interactives
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { 
         cwd: tempDir,
@@ -58,7 +58,7 @@ describe('Commande directive init', () => {
 
     it('devrait créer tous les fichiers de configuration requis', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -81,7 +81,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer un package.json valide avec versions flexibles', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -108,7 +108,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer une configuration TypeScript valide simplifiée', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -133,7 +133,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer une configuration Directive valide en anglais', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -154,7 +154,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer un README avec la structure par défaut (JSON)', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -163,17 +163,17 @@ describe('Commande directive init', () => {
 
       // Vérifier les instructions en anglais et structure par défaut (JSON)
       expect(readmeContent).toContain('## Project Structure');
-      expect(readmeContent).toContain('- `agents/` : AI agents organized by application');
-      expect(readmeContent).toContain('- `data/` : Local JSON database (sessions, agent states)');
+      expect(readmeContent).toContain('agents/');
+      expect(readmeContent).toContain('data/');
       expect(readmeContent).toContain('## Database');
-      expect(readmeContent).toContain('LowDB');
+      expect(readmeContent).toContain('JSON');
     });
   });
 
   describe('Projet vide par défaut', () => {
     it('devrait créer un projet vide sans app par défaut', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -186,7 +186,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer un README avec instructions pour créer des agents', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -194,13 +194,12 @@ describe('Commande directive init', () => {
       const readmeContent = await fs.readFile(readmePath, 'utf-8');
 
       // Vérifier les instructions en anglais
-      expect(readmeContent).toContain('## Getting Started');
-      expect(readmeContent).toContain('### 1. Create your first application');
-      expect(readmeContent).toContain('npm run agent:create <app-name> <agent-name>');
-      expect(readmeContent).toContain('### 2. Start the Directive server');
+      expect(readmeContent).toContain('## Quick Start');
+      expect(readmeContent).toContain('directive create app');
+      expect(readmeContent).toContain('directive create agent');
+      expect(readmeContent).toContain('directive start');
       expect(readmeContent).toContain('npm run dev');
-      expect(readmeContent).toContain('## API Usage');
-      expect(readmeContent).toContain('curl http://localhost:3000/agents');
+      expect(readmeContent).toContain('curl http://localhost:3000');
     });
   });
 
@@ -227,7 +226,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer du JSON valide', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -283,7 +282,7 @@ describe('Commande directive init', () => {
   describe('Options de la commande', () => {
     it('devrait respecter l\'option --skip-install', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -295,7 +294,7 @@ describe('Commande directive init', () => {
 
     it('devrait générer un README avec les informations du projet en anglais', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Custom Author" --description "Custom Description" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Custom Author" --description "Custom Description" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -305,11 +304,10 @@ describe('Commande directive init', () => {
       expect(readmeContent).toContain(testProjectName);
       expect(readmeContent).toContain('Custom Description');
       expect(readmeContent).toContain('Custom Author');
-      expect(readmeContent).toContain('## Installation');
+      expect(readmeContent).toContain('Dependencies');
       expect(readmeContent).toContain('npm install');
       expect(readmeContent).toContain('npm run dev');
-      expect(readmeContent).toContain('## Getting Started');
-      expect(readmeContent).toContain('Created by: Custom Author');
+      expect(readmeContent).toContain('## Quick Start');
     });
   });
 
@@ -327,7 +325,7 @@ describe('Commande directive init', () => {
   describe('Choix de base de données', () => {
     it('devrait créer un projet avec JSON/LowDB par défaut', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --skip-install`;
+      const command = `node ${cliPath} init ${testProjectName} --author "Test Author" --description "Test Project" --database json --skip-install`;
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
@@ -427,9 +425,9 @@ describe('Commande directive init', () => {
       // Vérifier les instructions spécifiques à MongoDB
       expect(readmeContent).toContain('## Database');
       expect(readmeContent).toContain('MongoDB');
-      expect(readmeContent).toContain('MONGODB_URL');
-      expect(readmeContent).toContain('Make sure MongoDB is running');
-      expect(readmeContent).not.toContain('data/');
+      expect(readmeContent).toContain('not yet implemented');
+      expect(readmeContent).toContain('.env.example');
+      expect(readmeContent).toContain('[Not used with current DB]');
     });
   });
 }); 

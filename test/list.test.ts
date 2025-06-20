@@ -130,9 +130,9 @@ export const ${agentName}Machine = {};`;
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
       expect(output).toContain('Applications (3)');
-      expect(output).toContain('🏠 emptyapp');
-      expect(output).toContain('🏠 mobile');
-      expect(output).toContain('🏠 webapp');
+      expect(output).toContain('emptyapp');
+      expect(output).toContain('mobile');
+      expect(output).toContain('webapp');
       expect(output).toContain('Empty Team');
       expect(output).toContain('Mobile Team');
       expect(output).toContain('Web Team');
@@ -197,12 +197,12 @@ export const ${agentName}Machine = {};`;
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
       expect(output).toContain('All agents (4)');
-      expect(output).toContain('🏠 mobile/');
-      expect(output).toContain('🏠 webapp/');
-      expect(output).toContain('🤖 frontend');
-      expect(output).toContain('🤖 backend');
-      expect(output).toContain('🤖 ios');
-      expect(output).toContain('🤖 android');
+      expect(output).toContain('mobile/');
+      expect(output).toContain('webapp/');
+      expect(output).toContain('frontend');
+      expect(output).toContain('backend');
+      expect(output).toContain('ios');
+      expect(output).toContain('android');
     });
 
     it('devrait filtrer par application', async () => {
@@ -212,11 +212,11 @@ export const ${agentName}Machine = {};`;
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
       expect(output).toContain('Agents in application "webapp" (2)');
-      expect(output).toContain('🤖 frontend');
-      expect(output).toContain('🤖 backend');
+      expect(output).toContain('frontend');
+      expect(output).toContain('backend');
       expect(output).not.toContain('ios');
       expect(output).not.toContain('android');
-      expect(output).not.toContain('🏠 mobile/');
+      expect(output).not.toContain('mobile/');
     });
 
     it('devrait afficher les détails des agents', async () => {

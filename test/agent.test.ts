@@ -8,7 +8,7 @@ import * as os from 'os';
  * Tests d'intégration pour la commande directive agent list
  * Valide le listage des agents directeurs
  */
-describe('Commande directive agent list', () => {
+describe('Commande directive list agents', () => {
   let tempDir: string;
   let testProjectPath: string;
   const testProjectName = 'test-directive-agent-list';
@@ -142,10 +142,10 @@ Test documentation for ${agentName} agent.`;
     await fs.writeFile(path.join(agentPath, 'desc.mdx'), descMdx);
   }
 
-  describe('directive agent list', () => {
+  describe('directive list agents', () => {
     it('devrait lister tous les agents', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list`;
+      const command = `node ${cliPath} list agents`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
@@ -159,7 +159,7 @@ Test documentation for ${agentName} agent.`;
 
     it('devrait filtrer par application', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list --app testapp`;
+      const command = `node ${cliPath} list agents --app testapp`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
@@ -172,7 +172,7 @@ Test documentation for ${agentName} agent.`;
 
     it('devrait afficher un message quand aucun agent n\'est trouvé', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list --app nonexistent`;
+      const command = `node ${cliPath} list agents --app nonexistent`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
@@ -182,7 +182,7 @@ Test documentation for ${agentName} agent.`;
 
     it('devrait afficher les détails des agents', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list --app testapp`;
+      const command = `node ${cliPath} list agents --app testapp`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
@@ -212,7 +212,7 @@ Test documentation for ${agentName} agent.`;
       await fs.writeFile(path.join(emptyProjectPath, 'directive-conf.ts'), config);
 
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list`;
+      const command = `node ${cliPath} list agents`;
       
       const output = execSync(command, { cwd: emptyProjectPath, encoding: 'utf-8' });
       
@@ -224,7 +224,7 @@ Test documentation for ${agentName} agent.`;
   describe('Validation du projet Directive', () => {
     it('devrait échouer si pas dans un projet Directive', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list`;
+      const command = `node ${cliPath} list agents`;
       
       expect(() => {
         execSync(command, { cwd: tempDir, stdio: 'pipe' });
@@ -247,7 +247,7 @@ Test documentation for ${agentName} agent.`;
       await fs.writeFile(path.join(invalidProjectPath, 'directive-conf.ts'), config);
 
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list`;
+      const command = `node ${cliPath} list agents`;
       
       expect(() => {
         execSync(command, { cwd: invalidProjectPath, stdio: 'pipe' });
@@ -263,7 +263,7 @@ Test documentation for ${agentName} agent.`;
       await fs.writeFile(path.join(invalidAgentPath, 'agent.ts'), '// Agent sans metadata');
 
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list --app testapp`;
+      const command = `node ${cliPath} list agents --app testapp`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
@@ -278,7 +278,7 @@ Test documentation for ${agentName} agent.`;
       await fs.mkdir(hiddenPath, { recursive: true });
 
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent list`;
+      const command = `node ${cliPath} list agents`;
       
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
