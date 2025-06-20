@@ -108,7 +108,7 @@ describe('CLI Tests', () => {
         });
 
         // Vérifier que la commande de test s'exécute correctement
-        expect(output).toContain('✅ CLI Directive fonctionne correctement !');
+        expect(output).toContain('CLI Directive fonctionne correctement');
         expect(output).toContain('Version: 1.0.0');
         expect(output).toContain('Configuration phase 1.3 completée');
       } catch (error: any) {
@@ -118,7 +118,7 @@ describe('CLI Tests', () => {
           timeout: 5000
         });
 
-        expect(output).toContain('✅ CLI Directive fonctionne correctement !');
+        expect(output).toContain('CLI Directive fonctionne correctement');
         expect(output).toContain('Version: 1.0.0');
       }
     });

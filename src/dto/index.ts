@@ -35,4 +35,10 @@ export {
   Application,
   CreateApplicationRequest,
   UpdateApplicationRequest
-} from './application.dto.js'; 
+} from './application.dto.js';
+
+// IAM Types
+export {
+  UserContext,
+  SessionAuthContext
+} from './iam.dto.js'; 
