@@ -6,7 +6,7 @@ import chalk from 'chalk';
 // Import commands 
 import { initCommand } from './commands/init.js';
 import { createCommand } from './commands/create.js';
-// import { agentCommand } from './commands/agent.js';
+import { agentCommand } from './commands/agent.js';
 // import { startCommand } from './commands/start.js';
 
 const program = new Command();
@@ -28,7 +28,7 @@ program.exitOverride((err) => {
 // Add commands
 program.addCommand(initCommand);
 program.addCommand(createCommand);
-// program.addCommand(agentCommand);
+program.addCommand(agentCommand);
 // program.addCommand(startCommand);
 
 // Temporary test command (will be removed later)
