@@ -355,115 +355,131 @@ export default directiveConfig;
 }
 
 /**
- * Génère le README du projet
+ * Génère le README.md du projet
  */
 async function generateProjectReadme(projectPath: string, projectInfo: InitOptions): Promise<void> {
-  const databaseDescriptions = {
-    json: '- `data/` : Local JSON database (sessions, agent states)',
-    mongodb: '- Database: MongoDB (configured via environment variables)',
-    postgresql: '- Database: PostgreSQL (configured via environment variables)'
-  };
-
-  const databaseInstructions = {
-    json: `## Database
-
-This project uses **LowDB** for local JSON storage. Data files are stored in the \`data/\` directory.
-
-No additional setup required - the database files are created automatically.`,
-    mongodb: `## Database
-
-This project uses **MongoDB** for data storage. Configure your connection via environment variables:
-
-\`\`\`bash
-export MONGODB_URL="mongodb://localhost:27017"
-export MONGODB_DATABASE="${projectInfo.name}"
-\`\`\`
-
-Make sure MongoDB is running before starting the server.`,
-    postgresql: `## Database
-
-This project uses **PostgreSQL** for data storage. Configure your connection via environment variables:
-
-\`\`\`bash
-export POSTGRES_HOST="localhost"
-export POSTGRES_PORT="5432"
-export POSTGRES_DATABASE="${projectInfo.name}"
-export POSTGRES_USERNAME="directive"
-export POSTGRES_PASSWORD="directive"
-\`\`\`
-
-Make sure PostgreSQL is running and the database exists before starting the server.`
-  };
-
-  const readme = `# ${projectInfo.name}
+  const readmeContent = `# ${projectInfo.name}
 
 ${projectInfo.description}
 
-## Installation
+## Overview
 
+This is a **Directive** project that orchestrates AI agents using state machines (XState).
+
+**Author**: ${projectInfo.author}  
+**Version**: 1.0.0
+
+## Project Structure
+
+\`\`\`
+${projectInfo.name}/
+├── agents/                    # AI agents directory (currently empty)
+│   └── .gitkeep              # Placeholder file
+├── data/                     # Local JSON database (LowDB)${projectInfo.database !== 'json' ? ' [Not used with current DB]' : ''}
+├── directive-conf.ts         # Directive configuration
+├── package.json              # Project dependencies
+├── tsconfig.json             # TypeScript configuration
+└── README.md                 # This file
+\`\`\`
+
+## Quick Start
+
+### 1. Install Dependencies
 \`\`\`bash
 npm install
 \`\`\`
 
-${databaseInstructions[projectInfo.database!]}
-
-## Getting Started
-
-Your Directive project is ready! To get started:
-
-### 1. Create your first application
+### 2. Create Your First Application
 \`\`\`bash
-npm run agent:create <app-name> <agent-name>
+# Create an application to group your agents
+directive create app my-app
 \`\`\`
 
-### 2. Start the Directive server
+### 3. Create Your First Agent
+\`\`\`bash
+# Create an agent within your application
+directive create agent --app my-app --name my-agent
+\`\`\`
+
+### 4. Start the Server
 \`\`\`bash
 npm run dev
+# or directly:
+directive start
 \`\`\`
 
-The server will start on http://localhost:3000 and automatically scan for agents in the \`agents/\` directory.
-
-### 3. List available agents
-\`\`\`bash
-npm run agent:list
-\`\`\`
-
-## Project Structure
-
-- \`agents/\` : AI agents organized by application
-${databaseDescriptions[projectInfo.database!]}
-- \`directive-conf.ts\` : Server configuration
-
-## API Usage
-
-Once you have created agents, you can interact with them via the REST API:
+### 5. Test Your Agent
+Once the server is running, you can interact with your agents via REST API:
 
 \`\`\`bash
-# List available agents
-curl http://localhost:3000/agents
-
-# Create a session
+# Create a session with your agent
 curl -X POST http://localhost:3000/sessions \\
   -H "Content-Type: application/json" \\
-  -d '{"agent_type": "your-app/your-agent"}'
+  -d '{"agent_type": "my-app/my-agent"}'
 
-# Send events to session
-curl -X POST http://localhost:3000/sessions/SESSION_ID/events \\
-  -H "Content-Type: application/json" \\
-  -d '{"event": "EVENT_NAME", "data": {...}}'
+# List all available agents
+curl http://localhost:3000/agents
 \`\`\`
 
-## Development
+## Database Configuration
 
-This project uses [Directive](https://github.com/directive-ai/core) for AI agents orchestration.
+**Current database**: ${getDatabaseDescription(projectInfo.database!)}
 
-Created by: ${projectInfo.author}
+${getDatabaseSetupInstructions(projectInfo.database!)}
+
+## Available Commands
+
+### Application Management
+\`\`\`bash
+directive create app <app-name>          # Create a new application
+\`\`\`
+
+### Agent Management
+\`\`\`bash
+directive create agent                   # Create a new agent (interactive)
+directive create agent --app <app> --name <agent>  # Create agent with options
+directive agent list                     # List all agents
+directive agent list --app <app>        # List agents in specific application
+\`\`\`
+
+### Server Management
+\`\`\`bash
+directive start                          # Start the Directive server
+directive start --port 3001             # Start on custom port
+\`\`\`
+
+### Development
+\`\`\`bash
+npm run dev                              # Start server in development mode
+npm run build                           # Build the project
+npm test                                # Run tests
+\`\`\`
+
+## Next Steps
+
+1. **Explore the generated agent**: Check \`agents/<app>/<agent>/agent.ts\` to see the XState machine
+2. **Read agent documentation**: Each agent has a \`desc.mdx\` file with detailed documentation
+3. **Customize your agents**: Modify the state machines to implement your business logic
+4. **Test via API**: Use the REST endpoints to interact with your agents
+
+## Learn More
+
+- **Directive Documentation**: [Link to docs]
+- **XState Documentation**: https://xstate.js.org/
+- **Agent Development Guide**: [Link to guide]
+
+---
+
+Your Directive project is ready! 🚀
+
+Create your first application and agent to get started:
+\`\`\`bash
+directive create app my-app
+directive create agent --app my-app --name my-first-agent
+\`\`\`
 `;
 
-  await fs.writeFile(
-    path.join(projectPath, 'README.md'),
-    readme
-  );
+  await fs.writeFile(path.join(projectPath, 'README.md'), readmeContent);
 }
 
 /**
@@ -560,26 +576,19 @@ function displaySuccessMessage(projectInfo: InitOptions): void {
   console.log(databaseMessages[projectInfo.database!]);
   
   console.log(chalk.blue('\n📋 Next steps:'));
-  console.log(chalk.gray(`   cd ${projectInfo.name}`));
-  
-  if (projectInfo.skipInstall) {
-    console.log(chalk.gray('   npm install'));
-  }
-  
-  if (databaseSetup[projectInfo.database!]) {
-    console.log(databaseSetup[projectInfo.database!]);
-  }
-  
-  console.log(chalk.gray('   npm run agent:create <app-name> <agent-name>  # Create your first agent'));
-  console.log(chalk.gray('   npm run dev                                   # Start the server'));
+  console.log(chalk.gray('   cd ' + projectInfo.name));
+  console.log(chalk.gray('   npm install'));
+  console.log(chalk.gray('   directive create app <app-name>              # Create your first app'));
+  console.log(chalk.gray('   directive create agent                       # Create your first agent'));
+  console.log(chalk.gray('   directive start                              # Start the server'));
   
   console.log(chalk.blue('\n🌐 Server:'));
   console.log(chalk.gray('   The server will start on http://localhost:3000'));
   
   console.log(chalk.blue('\n📚 Documentation:'));
-  console.log(chalk.gray(`   cat ${projectInfo.name}/README.md`));
+  console.log(chalk.gray('   cat ' + projectInfo.name + '/README.md'));
   
-  console.log(chalk.yellow('\n⚠️  Note: Your project starts empty. Create your first agent to get started!'));
+  console.log(chalk.yellow('\n⚠️  Note: Your project starts empty. Create your first application and agent to get started!'));
 }
 
 /**
@@ -616,4 +625,38 @@ POSTGRES_PASSWORD=directive
       envContent
     );
   }
+}
+
+/**
+ * Retourne la description de la base de données
+ */
+function getDatabaseDescription(dbType: string): string {
+  const descriptions: Record<string, string> = {
+    json: 'JSON/LowDB (local file-based)',
+    mongodb: 'MongoDB (disabled: not yet implemented)',
+    postgresql: 'PostgreSQL (disabled: not yet implemented)'
+  };
+  return descriptions[dbType] || descriptions.json;
+}
+
+/**
+ * Retourne les instructions de setup pour la base de données
+ */
+function getDatabaseSetupInstructions(dbType: string): string {
+  const instructions: Record<string, string> = {
+    json: `Your project uses **LowDB** with JSON files for local development.
+- Database files are stored in the \`data/\` directory
+- No additional setup required - just run \`npm install\``,
+    
+    mongodb: `⚠️  **MongoDB support is planned but not yet implemented.**
+- Copy \`.env.example\` to \`.env\`
+- Configure your MongoDB connection string
+- Install MongoDB locally or use MongoDB Atlas`,
+    
+    postgresql: `⚠️  **PostgreSQL support is planned but not yet implemented.**
+- Copy \`.env.example\` to \`.env\`
+- Configure your PostgreSQL connection settings
+- Install PostgreSQL locally or use a cloud provider`
+  };
+  return instructions[dbType] || instructions.json;
 } 

@@ -6,6 +6,7 @@ import chalk from 'chalk';
 // Import commands 
 import { initCommand } from './commands/init.js';
 import { createCommand } from './commands/create.js';
+import { listCommand } from './commands/list.js';
 import { agentCommand } from './commands/agent.js';
 // import { startCommand } from './commands/start.js';
 
@@ -28,6 +29,7 @@ program.exitOverride((err) => {
 // Add commands
 program.addCommand(initCommand);
 program.addCommand(createCommand);
+program.addCommand(listCommand);
 program.addCommand(agentCommand);
 // program.addCommand(startCommand);
 
@@ -38,14 +40,19 @@ program
   .action(() => {
     console.log(chalk.green('✅ CLI Directive fonctionne correctement !'));
     console.log(chalk.blue('Version:'), '1.0.0');
-    console.log(chalk.blue('Status:'), 'Lot 3.2 - Commande init implémentée');
+    console.log(chalk.blue('Status:'), 'Lot 3.4 - Commands refactored with list');
     console.log(chalk.yellow('🔗 Mode:'), 'Développement avec npm link');
   });
 
 // Parse command line arguments
-program.parse();
+program.parseAsync(process.argv).catch((error) => {
+  console.error('Erreur:', error.message);
+  process.exit(1);
+});
 
 // If no command provided, show help
 if (!process.argv.slice(2).length) {
   program.outputHelp();
-} 
+}
+
+export { program }; 

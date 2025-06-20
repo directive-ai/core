@@ -5,21 +5,21 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import * as os from 'os';
 
 /**
- * Tests d'intégration pour les commandes directive agent
- * Valide la création et listage d'agents directeurs
+ * Tests d'intégration pour la commande directive agent list
+ * Valide le listage des agents directeurs
  */
-describe('Commandes directive agent', () => {
+describe('Commande directive agent list', () => {
   let tempDir: string;
   let testProjectPath: string;
-  const testProjectName = 'test-directive-agent';
+  const testProjectName = 'test-directive-agent-list';
 
   beforeEach(async () => {
     // Créer un répertoire temporaire unique pour chaque test
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'directive-agent-test-'));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'directive-agent-list-test-'));
     testProjectPath = path.join(tempDir, testProjectName);
 
-    // Créer un projet Directive de base avec une application
-    await createBasicDirectiveProjectWithApp();
+    // Créer un projet Directive de base avec des agents
+    await createBasicDirectiveProjectWithAgents();
   });
 
   afterEach(async () => {
@@ -32,9 +32,9 @@ describe('Commandes directive agent', () => {
   });
 
   /**
-   * Crée un projet Directive basique avec une application pour les tests
+   * Crée un projet Directive basique avec des agents pour les tests
    */
-  async function createBasicDirectiveProjectWithApp(): Promise<void> {
+  async function createBasicDirectiveProjectWithAgents(): Promise<void> {
     // Créer la structure de base
     await fs.mkdir(testProjectPath, { recursive: true });
     await fs.mkdir(path.join(testProjectPath, 'agents'), { recursive: true });
@@ -63,16 +63,28 @@ describe('Commandes directive agent', () => {
       JSON.stringify(packageJson, null, 2)
     );
 
-    // Créer une application de test
-    await fs.mkdir(path.join(testProjectPath, 'agents/testapp'), { recursive: true });
+    // Créer application testapp avec agents
+    await createTestApplication('testapp', ['agent1', 'agent2']);
     
+    // Créer application otherapp avec un agent
+    await createTestApplication('otherapp', ['agent3']);
+  }
+
+  /**
+   * Crée une application de test avec ses agents
+   */
+  async function createTestApplication(appName: string, agentNames: string[]): Promise<void> {
+    const appPath = path.join(testProjectPath, 'agents', appName);
+    await fs.mkdir(appPath, { recursive: true });
+    
+    // Créer l'application card
     const appCard = {
-      id: 'app_testapp_test_123',
-      name: 'testapp',
-      description: 'Test application',
+      id: `app_${appName}_test_123`,
+      name: appName,
+      description: `${appName} test application`,
       author: 'Test Author',
       version: '1.0.0',
-      agents: [],
+      agents: agentNames,
       metadata: {
         category: 'test',
         tags: ['test'],
@@ -81,204 +93,56 @@ describe('Commandes directive agent', () => {
     };
     
     await fs.writeFile(
-      path.join(testProjectPath, 'agents/testapp/index.json'),
+      path.join(appPath, 'index.json'),
       JSON.stringify(appCard, null, 2)
     );
+
+    // Créer les agents
+    for (const [index, agentName] of agentNames.entries()) {
+      await createTestAgent(appName, agentName, index + 1);
+    }
   }
 
-  describe('directive agent create', () => {
-    it('devrait créer un agent avec toutes les options', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp simple-agent --author "Custom Author" --description "Test agent description"`;
-      
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
+  /**
+   * Crée un agent de test
+   */
+  async function createTestAgent(appName: string, agentName: string, authorNumber: number): Promise<void> {
+    const agentPath = path.join(testProjectPath, 'agents', appName, agentName);
+    await fs.mkdir(agentPath, { recursive: true });
 
-      // Vérifier que le répertoire est créé
-      const agentPath = path.join(testProjectPath, 'agents/testapp/simple-agent');
-      const exists = await fs.access(agentPath).then(() => true).catch(() => false);
-      expect(exists).toBe(true);
+    // Créer agent.json
+    const agentMetadata = {
+      id: `agent_${appName}_${agentName}_test_${authorNumber}`,
+      name: agentName,
+      type: `${appName}/${agentName}`,
+      description: `${agentName} test agent description`,
+      author: `Author${authorNumber}`,
+      version: '1.0.0',
+      application: appName,
+      created_at: new Date().toISOString(),
+      xstate_version: '5.x',
+      states: ['initial', 'runningLeft', 'runningRight', 'terminated']
+    };
 
-      // Vérifier les fichiers créés
-      const agentTsExists = await fs.access(path.join(agentPath, 'agent.ts')).then(() => true).catch(() => false);
-      const agentJsonExists = await fs.access(path.join(agentPath, 'agent.json')).then(() => true).catch(() => false);
-      const descMdxExists = await fs.access(path.join(agentPath, 'desc.mdx')).then(() => true).catch(() => false);
-      
-      expect(agentTsExists).toBe(true);
-      expect(agentJsonExists).toBe(true);
-      expect(descMdxExists).toBe(true);
-    });
+    await fs.writeFile(
+      path.join(agentPath, 'agent.json'),
+      JSON.stringify(agentMetadata, null, 2)
+    );
 
-    it('devrait valider le contenu du fichier agent.json', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp metadata-test --author "Meta Author" --description "Agent for metadata testing"`;
-      
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
+    // Créer agent.ts (simple stub)
+    const agentTs = `// Test agent ${agentName} for ${appName}
+export const ${agentName}Machine = {};`;
+    
+    await fs.writeFile(path.join(agentPath, 'agent.ts'), agentTs);
 
-      const agentJsonPath = path.join(testProjectPath, 'agents/testapp/metadata-test/agent.json');
-      const agentContent = await fs.readFile(agentJsonPath, 'utf-8');
-      const agentData = JSON.parse(agentContent);
-
-      expect(agentData.name).toBe('metadata-test');
-      expect(agentData.type).toBe('testapp/metadata-test');
-      expect(agentData.description).toBe('Agent for metadata testing');
-      expect(agentData.author).toBe('Meta Author');
-      expect(agentData.version).toBe('1.0.0');
-      expect(agentData.application).toBe('testapp');
-      expect(agentData.id).toMatch(/^agent_testapp_metadata-test_/);
-      expect(agentData.states).toEqual(['initial', 'runningLeft', 'runningRight', 'terminated']);
-      expect(agentData.xstate_version).toBe('5.x');
-    });
-
-    it('devrait valider le contenu du fichier agent.ts', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp xstate-test --author "XState Author" --description "XState testing agent"`;
-      
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-
-      const agentTsPath = path.join(testProjectPath, 'agents/testapp/xstate-test/agent.ts');
-      const agentContent = await fs.readFile(agentTsPath, 'utf-8');
-
-      // Vérifier les imports XState
-      expect(agentContent).toContain("import { createMachine, assign } from 'xstate'");
-      expect(agentContent).toContain("const registerAgent = (config: any) =>");
-      
-      // Vérifier la définition de la machine
-      expect(agentContent).toContain('const xstateTestMachine = createMachine');
-      expect(agentContent).toContain("id: 'xstate-test'");
-      expect(agentContent).toContain("initial: 'initial'");
-      
-      // Vérifier les états
-      expect(agentContent).toContain('initial:');
-      expect(agentContent).toContain('runningLeft:');
-      expect(agentContent).toContain('runningRight:');
-      expect(agentContent).toContain('terminated:');
-      
-      // Vérifier les transitions
-      expect(agentContent).toContain('CHOOSE_LEFT');
-      expect(agentContent).toContain('CHOOSE_RIGHT');
-      expect(agentContent).toContain('COMPLETE');
-      expect(agentContent).toContain('ERROR');
-      
-      // Vérifier l'enregistrement
-      expect(agentContent).toContain('registerAgent({');
-      expect(agentContent).toContain("type: 'testapp/xstate-test'");
-    });
-
-    it('devrait valider le contenu du fichier desc.mdx', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp doc-test --author "Doc Author" --description "Documentation testing agent"`;
-      
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-
-      const descMdxPath = path.join(testProjectPath, 'agents/testapp/doc-test/desc.mdx');
-      const descContent = await fs.readFile(descMdxPath, 'utf-8');
-
-      // Vérifier la structure de documentation
-      expect(descContent).toContain('# Documentation testing agent');
-      expect(descContent).toContain('## Overview');
-      expect(descContent).toContain('## State Machine Flow');
-      expect(descContent).toContain('## States Description');
-      expect(descContent).toContain('## Context Data');
-      expect(descContent).toContain('## Events');
-      expect(descContent).toContain('## Usage Example');
-      
-      // Vérifier les détails spécifiques
-      expect(descContent).toContain('testapp/doc-test');
-      expect(descContent).toContain('Doc Author');
-      expect(descContent).toContain('stateDiagram-v2');
-      
-      // Vérifier les exemples curl
-      expect(descContent).toContain('curl -X POST http://localhost:3000/sessions');
-      expect(descContent).toContain('CHOOSE_LEFT');
-      expect(descContent).toContain('CHOOSE_RIGHT');
-    });
-
-    it('devrait mettre à jour l\'application card', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp update-test --author "Update Author" --description "Test application card update"`;
-      
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-
-      const appCardPath = path.join(testProjectPath, 'agents/testapp/index.json');
-      const appContent = await fs.readFile(appCardPath, 'utf-8');
-      const appData = JSON.parse(appContent);
-
-      expect(appData.agents).toContain('update-test');
-    });
-
-    it('devrait échouer si l\'application n\'existe pas', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create nonexistent test-agent --author "Test" --description "Test"`;
-      
-      expect(() => {
-        execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-      }).toThrow();
-    });
-
-    it('devrait échouer si l\'agent existe déjà', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp duplicate-agent --author "Test" --description "Test"`;
-      
-      // Première création - devrait réussir
-      execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-
-      // Deuxième création - devrait échouer
-      expect(() => {
-        execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-      }).toThrow();
-    });
-
-    it('devrait valider le format du nom d\'agent', async () => {
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      
-      const invalidNames = ['Agent', 'my.agent', 'my agent', 'agent@123', 'a', 'core', 'index'];
-      
-      for (const name of invalidNames) {
-        const command = `node ${cliPath} agent create testapp "${name}" --author "Test" --description "Test"`;
-        
-        expect(() => {
-          execSync(command, { cwd: testProjectPath, stdio: 'pipe' });
-        }).toThrow();
-      }
-    });
-  });
+    // Créer desc.mdx (simple stub)
+    const descMdx = `# ${agentName} Agent
+Test documentation for ${agentName} agent.`;
+    
+    await fs.writeFile(path.join(agentPath, 'desc.mdx'), descMdx);
+  }
 
   describe('directive agent list', () => {
-    beforeEach(async () => {
-      // Créer quelques agents de test
-      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      
-      execSync(`node ${cliPath} agent create testapp agent1 --author "Author1" --description "First test agent"`, 
-        { cwd: testProjectPath, stdio: 'pipe' });
-      
-      execSync(`node ${cliPath} agent create testapp agent2 --author "Author2" --description "Second test agent"`, 
-        { cwd: testProjectPath, stdio: 'pipe' });
-
-      // Créer une deuxième application
-      await fs.mkdir(path.join(testProjectPath, 'agents/otherapp'), { recursive: true });
-      const appCard2 = {
-        id: 'app_otherapp_test_456',
-        name: 'otherapp',
-        description: 'Other test application',
-        author: 'Test Author',
-        version: '1.0.0',
-        agents: [],
-        metadata: {
-          category: 'test',
-          tags: ['test'],
-          created_at: new Date().toISOString()
-        }
-      };
-      
-      await fs.writeFile(
-        path.join(testProjectPath, 'agents/otherapp/index.json'),
-        JSON.stringify(appCard2, null, 2)
-      );
-
-      execSync(`node ${cliPath} agent create otherapp agent3 --author "Author3" --description "Third test agent"`, 
-        { cwd: testProjectPath, stdio: 'pipe' });
-    });
-
     it('devrait lister tous les agents', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
       const command = `node ${cliPath} agent list`;
@@ -313,6 +177,7 @@ describe('Commandes directive agent', () => {
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
       expect(output).toContain('No agents found in application "nonexistent"');
+      expect(output).toContain('directive create agent');
     });
 
     it('devrait afficher les détails des agents', async () => {
@@ -322,32 +187,104 @@ describe('Commandes directive agent', () => {
       const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
       
       // Vérifier les détails des agents
-      expect(output).toContain('First test agent');
-      expect(output).toContain('Second test agent');
+      expect(output).toContain('agent1 test agent description');
+      expect(output).toContain('agent2 test agent description');
       expect(output).toContain('Author1');
       expect(output).toContain('Author2');
       expect(output).toContain('v1.0.0');
       expect(output).toContain('4 states');
+    });
+
+    it('devrait afficher un message quand aucun agent n\'existe dans le projet', async () => {
+      // Créer un projet vide
+      const emptyProjectPath = path.join(tempDir, 'empty-project');
+      await fs.mkdir(emptyProjectPath, { recursive: true });
+      await fs.mkdir(path.join(emptyProjectPath, 'agents'), { recursive: true });
+
+      const config = `export const directiveConfig = {
+  server: { port: 3000, host: 'localhost' },
+  agents: { autoScan: true, scanPath: './agents', hotReload: true },
+  database: { type: 'json' as const, config: { dataDir: './data' } },
+  iam: { type: 'mock' as const },
+  project: { name: 'empty-project', author: 'Test Author', version: '1.0.0' }
+};`;
+      
+      await fs.writeFile(path.join(emptyProjectPath, 'directive-conf.ts'), config);
+
+      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
+      const command = `node ${cliPath} agent list`;
+      
+      const output = execSync(command, { cwd: emptyProjectPath, encoding: 'utf-8' });
+      
+      expect(output).toContain('No agents found in this project');
+      expect(output).toContain('directive create agent');
     });
   });
 
   describe('Validation du projet Directive', () => {
     it('devrait échouer si pas dans un projet Directive', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
-      const command = `node ${cliPath} agent create testapp test-agent --author "Test" --description "Test"`;
+      const command = `node ${cliPath} agent list`;
       
       expect(() => {
         execSync(command, { cwd: tempDir, stdio: 'pipe' });
       }).toThrow();
     });
 
-    it('devrait échouer pour agent list si pas dans un projet Directive', async () => {
+    it('devrait échouer si le répertoire agents n\'existe pas', async () => {
+      // Créer un projet sans répertoire agents
+      const invalidProjectPath = path.join(tempDir, 'invalid-project');
+      await fs.mkdir(invalidProjectPath, { recursive: true });
+
+      const config = `export const directiveConfig = {
+  server: { port: 3000, host: 'localhost' },
+  agents: { autoScan: true, scanPath: './agents', hotReload: true },
+  database: { type: 'json' as const, config: { dataDir: './data' } },
+  iam: { type: 'mock' as const },
+  project: { name: 'invalid-project', author: 'Test Author', version: '1.0.0' }
+};`;
+      
+      await fs.writeFile(path.join(invalidProjectPath, 'directive-conf.ts'), config);
+
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
       const command = `node ${cliPath} agent list`;
       
       expect(() => {
-        execSync(command, { cwd: tempDir, stdio: 'pipe' });
+        execSync(command, { cwd: invalidProjectPath, stdio: 'pipe' });
       }).toThrow();
+    });
+  });
+
+  describe('Gestion des erreurs de scan', () => {
+    it('devrait ignorer les agents sans agent.json valide', async () => {
+      // Créer un répertoire d'agent sans agent.json
+      const invalidAgentPath = path.join(testProjectPath, 'agents/testapp/invalid-agent');
+      await fs.mkdir(invalidAgentPath, { recursive: true });
+      await fs.writeFile(path.join(invalidAgentPath, 'agent.ts'), '// Agent sans metadata');
+
+      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
+      const command = `node ${cliPath} agent list --app testapp`;
+      
+      const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
+      
+      // Devrait toujours afficher les 2 agents valides
+      expect(output).toContain('Agents in application "testapp" (2)');
+      expect(output).not.toContain('invalid-agent');
+    });
+
+    it('devrait ignorer les répertoires cachés', async () => {
+      // Créer un répertoire caché
+      const hiddenPath = path.join(testProjectPath, 'agents/.hidden');
+      await fs.mkdir(hiddenPath, { recursive: true });
+
+      const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
+      const command = `node ${cliPath} agent list`;
+      
+      const output = execSync(command, { cwd: testProjectPath, encoding: 'utf-8' });
+      
+      // Devrait afficher les 3 agents normaux
+      expect(output).toContain('All agents (3)');
+      expect(output).not.toContain('.hidden');
     });
   });
 }); 
