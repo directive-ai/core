@@ -55,6 +55,7 @@ directive --version      # Test final
 | `npm run package` | Création du .tgz | Packaging |
 | `npm run package:global` | Package + installation globale | Distribution |
 | `npm run unlink` | Supprimer le lien global | Nettoyage |
+| `npm run test:cli` | Tests de la CLI uniquement | Validation CLI |
 
 ### 🔄 Workflow recommandé
 
@@ -101,6 +102,28 @@ npm run build           # Build production
 npm run start           # Démarrer en production
 npm test                # Tests
 ```
+
+## Tests
+
+### 🧪 Tests disponibles
+
+```bash
+npm test                 # Tous les tests
+npm run test:cli         # Tests CLI uniquement
+npm run test:watch       # Tests en mode watch
+npm run test:cov         # Tests avec couverture de code
+```
+
+### Tests CLI
+
+Le projet inclut des tests automatisés pour la CLI :
+
+- ✅ **`directive --version`** : Vérifie que la version est retournée correctement
+- ✅ **`directive --help`** : Vérifie que l'aide s'affiche avec les bonnes informations
+- ✅ **`directive test`** : Vérifie que la commande de test fonctionne
+- ✅ **Codes de sortie** : Vérifie que les commandes se terminent avec le bon exit code
+
+**Fallback automatique** : Si la commande globale `directive` n'est pas disponible, les tests utilisent automatiquement `npm run cli` comme fallback.
 
 ## Configuration
 
