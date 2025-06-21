@@ -117,20 +117,13 @@ export class AgentDirecteurFactory {
 
     try {
       // 1. Valider la machine XState
-      console.log('🔍 [DEBUG] Starting machine validation...');
       await this.validateMachine(machineDefinition);
-      console.log('✅ [DEBUG] Machine validation passed');
 
       // 2. Calculer le hash du code source
-      console.log('🔍 [DEBUG] Calculating machine hash...');
       const sourceHash = this.calculateMachineHash(machineDefinition);
-      console.log('✅ [DEBUG] Machine hash calculated:', sourceHash);
 
       // 3. Préparer les données pour la BDD
-      console.log('🔍 [DEBUG] Preparing agent data for database...');
-      console.log('🔍 [DEBUG] Serializing machine...');
       const serializedMachine = this.serializeMachine(machineDefinition);
-      console.log('✅ [DEBUG] Machine serialized');
       
       const agentData: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'> = {
         type: agentType,
@@ -149,20 +142,14 @@ export class AgentDirecteurFactory {
           deployment_strategy: 'wait'
         }
       };
-      console.log('✅ [DEBUG] Agent data prepared');
 
       // 4. Enregistrer en BDD (avec versioning automatique)
-      console.log('🔍 [DEBUG] Getting existing agent...');
       const existingAgent = await this.database.getAgentByType(agentType);
       const oldVersion = existingAgent?.deployment_version || 0;
-      console.log('✅ [DEBUG] Existing agent checked, oldVersion:', oldVersion);
       
-      console.log('🔍 [DEBUG] Registering agent in database...');
       const registeredAgent = await this.database.registerAgent(agentData);
-      console.log('✅ [DEBUG] Agent registered in database');
 
       // 5. Mettre à jour le cache en mémoire
-      console.log('🔍 [DEBUG] Updating cache...');
       this.machineDefinitions.set(agentType, {
         machine: machineDefinition,
         metadata: {
@@ -171,12 +158,10 @@ export class AgentDirecteurFactory {
           version: metadata.version
         }
       });
-      console.log('✅ [DEBUG] Cache updated');
 
       const deploymentTime = Date.now() - startTime;
 
       // Enrichir le message avec les informations Git
-      console.log('🔍 [DEBUG] Building response message...');
       let message = `Agent ${agentType} deployed successfully (v${oldVersion} → v${registeredAgent.deployment_version})`;
       if (gitResult.commit_id) {
         message += ` @ ${gitResult.commit_id.substring(0, 7)}`;
@@ -184,13 +169,9 @@ export class AgentDirecteurFactory {
       if (gitResult.was_dirty && gitResult.strategy_used === 'auto-commit') {
         message += ` (auto-committed ${gitResult.committed_files?.length || 0} files)`;
       }
-      console.log('✅ [DEBUG] Message built');
 
-      console.log('🔍 [DEBUG] Getting active sessions count...');
       const activeSessionsCount = await this.getActiveSessionsCount(agentType);
-      console.log('✅ [DEBUG] Active sessions count:', activeSessionsCount);
 
-      console.log('🔍 [DEBUG] Building final response...');
       return {
         success: true,
         agent_type: agentType,
@@ -372,10 +353,7 @@ export class AgentDirecteurFactory {
    * Calcule le hash d'une machine pour détecter les changements
    */
   private calculateMachineHash(machine: any): string {
-    console.log('🔍 [DEBUG] Machine type for hash:', typeof machine);
-    console.log('🔍 [DEBUG] Machine.config type:', typeof machine.config);
     const machineString = JSON.stringify(machine.config);
-    console.log('🔍 [DEBUG] Machine config stringified, length:', machineString.length);
     return crypto.createHash('md5').update(machineString).digest('hex');
   }
 
@@ -401,13 +379,12 @@ export class AgentDirecteurFactory {
       const activeSessions = await this.database.getActiveSessions();
       // Gérer le cas où getActiveSessions retourne undefined/null
       if (!activeSessions || !Array.isArray(activeSessions)) {
-        console.log('🔍 [DEBUG] No active sessions or invalid result from database');
         return 0;
       }
       return activeSessions.filter(session => session.agent_directeur_type === agentType).length;
     } catch (error) {
-      console.error('❌ [DEBUG] Error getting active sessions count:', error);
-      return 0; // Valeur par défaut sûre
+      // Valeur par défaut sûre en cas d'erreur
+      return 0;
     }
   }
 

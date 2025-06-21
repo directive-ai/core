@@ -210,12 +210,12 @@ async function loadCompiledAgent(agentType: string): Promise<{
     
     // 5. Détecter la machine exportée
     const possibleExports = [
-      'Agent',          // Objet webpack contenant simpleMachine  
+      'Agent',          // Objet webpack contenant la machine  
       'simpleMachine',  // Template par défaut
+      `${agent}Machine`, // Template dynamique (ex: workflowMachine)
+      `${agent.charAt(0).toUpperCase() + agent.slice(1)}Machine`, // Template capitalisé
       'machine',
-      'default',
-      `${agent}Machine`,
-      `${agent.charAt(0).toUpperCase() + agent.slice(1)}Machine`
+      'default'
     ];
     
     let machine = null;
@@ -228,9 +228,21 @@ async function loadCompiledAgent(agentType: string): Promise<{
     }
     
     // Si on a trouvé un objet Agent, chercher la machine à l'intérieur
-    if (machine && typeof machine === 'object' && machine.simpleMachine) {
-      console.log(chalk.gray(`   🔍 Extracting machine from Agent.simpleMachine`));
-      machine = machine.simpleMachine;
+    if (machine && typeof machine === 'object' && !machine.config) {
+      // C'est probablement l'objet Agent webpack, chercher la vraie machine
+      const possibleMachineProps = [
+        'simpleMachine',
+        `${agent}Machine`,
+        `${agent.charAt(0).toUpperCase() + agent.slice(1)}Machine`,
+        'machine'
+      ];
+      
+      for (const prop of possibleMachineProps) {
+        if (machine[prop] && machine[prop].config) {
+          machine = machine[prop];
+          break;
+        }
+      }
     }
     
     if (!machine) {
