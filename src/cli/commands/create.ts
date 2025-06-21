@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Application, CreateApplicationRequest } from '../../dto/index.js';
+import { JsonDatabaseService } from '../../implementations/database/json-database.impl.js';
 
 interface CreateAppOptions {
   name?: string;
@@ -79,7 +80,7 @@ const createAppCommand = new Command('app')
       await createAppStructure(appInfo);
 
       // 5. Afficher le message de succès
-      displayAppSuccessMessage(appInfo);
+      await displayAppSuccessMessage(appInfo);
 
     } catch (error) {
       console.error(chalk.red('❌ Error creating application:'), error instanceof Error ? error.message : error);
@@ -225,6 +226,46 @@ async function getProjectAuthor(): Promise<string> {
 }
 
 /**
+ * Lit la configuration Directive pour déterminer le type de base de données
+ */
+async function readDatabaseConfig(): Promise<{ type: string; config: any }> {
+  try {
+    const configPath = path.join(process.cwd(), 'directive-conf.ts');
+    const configContent = await fs.readFile(configPath, 'utf-8');
+    
+    // Extraire le type de base de données depuis la configuration
+    const typeMatch = configContent.match(/database:\s*{\s*[^}]*'?type'?:\s*['"`]([^'"`]+)['"`]/);
+    const type = typeMatch ? typeMatch[1] : 'json';
+    
+    // Extraire la configuration spécifique selon le type
+    let config = {};
+    if (type === 'json') {
+      const dataDirMatch = configContent.match(/'?dataDir'?:\s*['"`]([^'"`]+)['"`]/);
+      config = { dataDir: dataDirMatch ? dataDirMatch[1] : './data' };
+    } else if (type === 'mongodb') {
+      const urlMatch = configContent.match(/'?url'?:\s*['"`]([^'"`]+)['"`]/);
+      const dbMatch = configContent.match(/'?database'?:\s*['"`]([^'"`]+)['"`]/);
+      config = { 
+        url: urlMatch ? urlMatch[1] : 'mongodb://localhost:27017',
+        database: dbMatch ? dbMatch[1] : 'directive' 
+      };
+    } else if (type === 'postgresql') {
+      const hostMatch = configContent.match(/'?host'?:\s*['"`]([^'"`]+)['"`]/);
+      const dbMatch = configContent.match(/'?database'?:\s*['"`]([^'"`]+)['"`]/);
+      config = { 
+        host: hostMatch ? hostMatch[1] : 'localhost',
+        database: dbMatch ? dbMatch[1] : 'directive' 
+      };
+    }
+    
+    return { type, config };
+  } catch {
+    // Fallback vers JSON si on ne peut pas lire la config
+    return { type: 'json', config: { dataDir: './data' } };
+  }
+}
+
+/**
  * Valide le nom de l'application et vérifie l'unicité
  */
 async function validateAppName(appName: string): Promise<void> {
@@ -295,6 +336,46 @@ async function createAppStructure(appInfo: Required<CreateAppOptions>): Promise<
   );
 
   console.log(chalk.green(`✅ Application structure created in agents/${appInfo.name}/`));
+
+  // Enregistrer aussi l'application dans la base de données
+  console.log(chalk.yellow('📝 Registering application in database...'));
+  
+  try {
+    // Lire la configuration de la base de données pour utiliser les bons paramètres
+    const dbConfig = await readDatabaseConfig();
+    
+    // Pour le moment, seule la base de données JSON est implémentée
+    if (dbConfig.type === 'json') {
+      const database = new JsonDatabaseService(dbConfig.config.dataDir);
+      await database.initialize();
+
+      const createRequest: CreateApplicationRequest = {
+        name: appInfo.name,
+        description: appInfo.description,
+        author: appInfo.author,
+        version: '1.0.0',
+        metadata: {
+          category: 'custom',
+          tags: ['application']
+        }
+      };
+
+      await database.createApplication(createRequest);
+      await database.close();
+      
+      console.log(chalk.green(`✅ Application registered in ${dbConfig.type} database`));
+    } else {
+      console.warn(chalk.yellow(`⚠️  Warning: Database type "${dbConfig.type}" not yet implemented for registration`));
+      console.warn(chalk.gray('   The application files were created successfully, but database registration'));
+      console.warn(chalk.gray('   is currently only supported for JSON database type.'));
+    }
+    
+  } catch (error) {
+    console.warn(chalk.yellow('⚠️  Warning: Could not register application in database'));
+    console.warn(chalk.gray(`   ${error instanceof Error ? error.message : error}`));
+    console.warn(chalk.gray('   The application files were created successfully, but you may need to run:'));
+    console.warn(chalk.gray(`   directive create app --name ${appInfo.name} --force`));
+  }
 }
 
 /**
@@ -309,7 +390,7 @@ function generateAppId(appName: string): string {
 /**
  * Affiche le message de succès final
  */
-function displayAppSuccessMessage(appInfo: Required<CreateAppOptions>): void {
+async function displayAppSuccessMessage(appInfo: Required<CreateAppOptions>): Promise<void> {
   console.log(chalk.green('\n🎉 Application created successfully!'));
   
   console.log(chalk.blue('\n📋 Application details:'));
@@ -324,6 +405,22 @@ function displayAppSuccessMessage(appInfo: Required<CreateAppOptions>): void {
   
   console.log(chalk.blue('\n📚 Files created:'));
   console.log(chalk.gray(`   agents/${appInfo.name}/index.json                   # Application metadata`));
+  
+  // Lire la configuration de la base de données pour afficher le bon message
+  const dbConfig = await readDatabaseConfig();
+  switch (dbConfig.type) {
+    case 'json':
+      console.log(chalk.gray(`   ${dbConfig.config.dataDir}/directive.json                      # Database registration`));
+      break;
+    case 'mongodb':
+      console.log(chalk.gray(`   MongoDB: ${dbConfig.config.database}                           # Database registration`));
+      break;
+    case 'postgresql':
+      console.log(chalk.gray(`   PostgreSQL: ${dbConfig.config.database}@${dbConfig.config.host}              # Database registration`));
+      break;
+    default:
+      console.log(chalk.gray(`   Database: ${dbConfig.type}                                     # Database registration`));
+  }
   
   console.log(chalk.yellow('\n⚠️  Note: The application is empty. Create agents to make it functional!'));
 }
