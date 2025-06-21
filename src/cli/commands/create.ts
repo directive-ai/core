@@ -550,7 +550,7 @@ type ${toPascalCase(agentInfo.name)}Event =
  * This is a simple 4-state machine following the MVP specification:
  * initial → runningLeft/runningRight → terminated
  */
-const ${toCamelCase(agentInfo.name)}Machine = createMachine<${toPascalCase(agentInfo.name)}Context, ${toPascalCase(agentInfo.name)}Event>({
+const ${toCamelCase(agentInfo.name)}Machine = createMachine({
   id: '${agentInfo.name}',
   initial: 'initial',
   context: {},
@@ -562,20 +562,20 @@ const ${toCamelCase(agentInfo.name)}Machine = createMachine<${toPascalCase(agent
           target: 'runningLeft',
           actions: assign({
             direction: 'left',
-            inputData: (context, event) => event.data
+            inputData: ({ event }) => event.data
           })
         },
         CHOOSE_RIGHT: {
           target: 'runningRight',
           actions: assign({
             direction: 'right',
-            inputData: (context, event) => event.data
+            inputData: ({ event }) => event.data
           })
         },
         ERROR: {
           target: 'terminated',
           actions: assign({
-            errorMessage: (context, event) => event.error
+            errorMessage: ({ event }) => event.error
           })
         }
       }
@@ -587,13 +587,13 @@ const ${toCamelCase(agentInfo.name)}Machine = createMachine<${toPascalCase(agent
         COMPLETE: {
           target: 'terminated',
           actions: assign({
-            result: (context, event) => event.data
+            result: ({ event }) => event.data
           })
         },
         ERROR: {
           target: 'terminated',
           actions: assign({
-            errorMessage: (context, event) => event.error
+            errorMessage: ({ event }) => event.error
           })
         }
       }
@@ -605,13 +605,13 @@ const ${toCamelCase(agentInfo.name)}Machine = createMachine<${toPascalCase(agent
         COMPLETE: {
           target: 'terminated',
           actions: assign({
-            result: (context, event) => event.data
+            result: ({ event }) => event.data
           })
         },
         ERROR: {
           target: 'terminated',
           actions: assign({
-            errorMessage: (context, event) => event.error
+            errorMessage: ({ event }) => event.error
           })
         }
       }
