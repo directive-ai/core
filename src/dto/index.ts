@@ -27,7 +27,12 @@ export {
 
 // Agent Types
 export {
-  AgentRegistration
+  AgentRegistration,
+  DeploymentStrategy,
+  DeployAgentRequest,
+  DeployAgentResponse,
+  AgentDeploymentStatus,
+  GitCommitStrategy
 } from './agent.dto';
 
 // Application Types

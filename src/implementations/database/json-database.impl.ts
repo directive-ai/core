@@ -70,7 +70,11 @@ export class JsonDatabaseService implements IDatabaseService {
       await this.saveData();
 
       this.initialized = true;
-      console.log(`JSON Database initialized: ${this.dbFile}`);
+      
+      // Ne pas logger pendant les tests
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`JSON Database initialized: ${this.dbFile}`);
+      }
     } catch (error) {
       throw new Error(`Failed to initialize JSON Database: ${error instanceof Error ? error.message : error}`);
     }
@@ -384,30 +388,87 @@ export class JsonDatabaseService implements IDatabaseService {
   // Gestion des Agents Directeurs
   // ==========================================
 
-  async registerAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at'>): Promise<AgentRegistration> {
+  async registerAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>): Promise<AgentRegistration> {
     await this.ensureInitialized();
     
+    // Vérifier si un agent avec ce type existe déjà
+    const existingAgent = await this.getAgentByType(agent.type);
+    
+    if (existingAgent) {
+      // Mise à jour d'un agent existant (redéploiement)
+      return this.deployExistingAgent(existingAgent, agent);
+    } else {
+      // Nouvel agent (premier déploiement)
+      return this.deployNewAgent(agent);
+    }
+  }
+
+  /**
+   * Déploie un nouvel agent (première fois)
+   */
+  private async deployNewAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>): Promise<AgentRegistration> {
     const agentId = this.generateId('agent');
     const now = new Date().toISOString();
     
     const newAgent: AgentRegistration = {
       ...agent,
       id: agentId,
-      created_at: now,
-      updated_at: now
+      deployment_version: agent.deployment_version || 1, // Premier déploiement = version 1
+      created_at: now,        // Date de première création
+      updated_at: now,
+      deployed_at: now,       // Date de déploiement
+      metadata: {
+        ...agent.metadata,
+        needs_deployment: false // Nouvellement déployé
+      }
     };
 
     this.data.agents[agentId] = newAgent;
 
     // Mettre à jour le compteur d'agents de l'application
-    const appAgents = await this.getApplicationAgents(agent.application_id);
-    const application = this.data.applications[agent.application_id];
-    if (application) {
-      application.agents_count = appAgents.length;
-    }
+    await this.updateApplicationAgentCount(agent.application_id);
 
     await this.saveData();
     return newAgent;
+  }
+
+  /**
+   * Redéploie un agent existant (incrémente la version)
+   */
+  private async deployExistingAgent(
+    existingAgent: AgentRegistration, 
+    updates: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>
+  ): Promise<AgentRegistration> {
+    const now = new Date().toISOString();
+    
+    const updatedAgent: AgentRegistration = {
+      ...existingAgent,
+      ...updates,
+      deployment_version: (existingAgent.deployment_version || 1) + 1, // Incrémenter la version
+      updated_at: now,
+      deployed_at: now,       // Nouvelle date de déploiement
+      // created_at reste inchangé (date du premier déploiement)
+      metadata: {
+        ...existingAgent.metadata,
+        ...updates.metadata,
+        needs_deployment: false // Vient d'être déployé
+      }
+    };
+
+    this.data.agents[existingAgent.id] = updatedAgent;
+    await this.saveData();
+    return updatedAgent;
+  }
+
+  /**
+   * Met à jour le compteur d'agents d'une application
+   */
+  private async updateApplicationAgentCount(applicationId: string): Promise<void> {
+    const appAgents = await this.getApplicationAgents(applicationId);
+    const application = this.data.applications[applicationId];
+    if (application) {
+      application.agents_count = appAgents.length;
+    }
   }
 
   async getRegisteredAgents(filter?: { 
@@ -481,6 +542,80 @@ export class JsonDatabaseService implements IDatabaseService {
     }
 
     await this.saveData();
+  }
+
+  /**
+   * Marque un agent comme ayant besoin d'être redéployé
+   * (utilisé quand on détecte un changement dans le code source)
+   */
+  async markAgentForDeployment(agentType: string, sourceHash: string): Promise<void> {
+    await this.ensureInitialized();
+    
+    const agent = await this.getAgentByType(agentType);
+    if (!agent) {
+      throw new Error(`Agent ${agentType} not found`);
+    }
+
+    // Mettre à jour le hash du code source en développement
+    agent.metadata = {
+      ...agent.metadata,
+      dev_source_hash: sourceHash,
+      needs_deployment: agent.metadata.source_hash !== sourceHash
+    };
+    agent.updated_at = new Date().toISOString();
+
+    this.data.agents[agent.id] = agent;
+    await this.saveData();
+  }
+
+  /**
+   * Récupère les agents qui ont besoin d'être redéployés
+   */
+  async getAgentsNeedingDeployment(applicationId?: string): Promise<AgentRegistration[]> {
+    await this.ensureInitialized();
+    
+    let agents = Object.values(this.data.agents);
+    
+    if (applicationId) {
+      agents = agents.filter(agent => agent.application_id === applicationId);
+    }
+    
+    return agents.filter(agent => agent.metadata.needs_deployment === true);
+  }
+
+  /**
+   * Récupère le statut de déploiement d'un agent spécifique
+   */
+  async getAgentDeploymentStatus(agentType: string): Promise<{
+    agent_type: string;
+    current_version: number;
+    current_git_commit_id?: string;
+    needs_deployment: boolean;
+    last_deployed_at: string;
+    active_sessions: number;
+  } | null> {
+    await this.ensureInitialized();
+    
+    const agent = await this.getAgentByType(agentType);
+    if (!agent) {
+      return null;
+    }
+
+    // Compter les sessions actives pour cet agent
+    const activeSessions = Object.values(this.data.sessions)
+      .filter(session => 
+        session.agent_directeur_type === agentType && 
+        session.status === 'active'
+      ).length;
+
+    return {
+      agent_type: agentType,
+      current_version: agent.deployment_version || 1,
+      current_git_commit_id: agent.git_commit_id,
+      needs_deployment: agent.metadata.needs_deployment || false,
+      last_deployed_at: agent.deployed_at,
+      active_sessions: activeSessions
+    };
   }
 
   // ==========================================

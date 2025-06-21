@@ -136,11 +136,11 @@ export interface IDatabaseService {
   // ==========================================
 
   /**
-   * Enregistre ou met à jour un agent directeur
+   * Enregistre ou déploie un agent directeur (avec versioning automatique)
    * @param agent Données complètes de l'agent à enregistrer
    * @returns Agent enregistré avec ID et timestamps
    */
-  registerAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at'>): Promise<AgentRegistration>;
+  registerAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>): Promise<AgentRegistration>;
 
   /**
    * Récupère la liste de tous les agents directeurs enregistrés
@@ -183,6 +183,33 @@ export interface IDatabaseService {
     status: 'active' | 'inactive' | 'error' | 'reloading',
     errorMessage?: string
   ): Promise<void>;
+
+  /**
+   * Marque un agent comme ayant besoin d'être redéployé
+   * @param agentType Type de l'agent
+   * @param sourceHash Hash du nouveau code source
+   */
+  markAgentForDeployment(agentType: string, sourceHash: string): Promise<void>;
+
+  /**
+   * Récupère les agents qui ont besoin d'être redéployés
+   * @param applicationId Filtrer par application (optionnel)
+   * @returns Liste des agents nécessitant un redéploiement
+   */
+  getAgentsNeedingDeployment(applicationId?: string): Promise<AgentRegistration[]>;
+
+  /**
+   * Récupère le statut de déploiement d'un agent spécifique
+   * @param agentType Type de l'agent
+   * @returns Statut de déploiement ou null si agent inexistant
+   */
+  getAgentDeploymentStatus(agentType: string): Promise<{
+    agent_type: string;
+    current_version: number;
+    needs_deployment: boolean;
+    last_deployed_at: string;
+    active_sessions: number;
+  } | null>;
 
   // ==========================================
   // Méthodes utilitaires
