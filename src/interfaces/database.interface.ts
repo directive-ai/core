@@ -136,6 +136,21 @@ export interface IDatabaseService {
   // ==========================================
 
   /**
+   * Crée un agent directeur en mode draft (sans machine_definition)
+   * @param agent Données de base de l'agent à créer
+   * @returns Agent créé avec statut 'draft'
+   */
+  createAgent(agent: {
+    type: string;
+    application_id: string;
+    name: string;
+    description: string;
+    version: string;
+    author: string;
+    file_path?: string;
+  }): Promise<AgentRegistration>;
+
+  /**
    * Enregistre ou déploie un agent directeur (avec versioning automatique)
    * @param agent Données complètes de l'agent à enregistrer
    * @returns Agent enregistré avec ID et timestamps
@@ -148,7 +163,7 @@ export interface IDatabaseService {
    * @returns Liste des agents avec leurs métadonnées
    */
   getRegisteredAgents(filter?: { 
-    status?: 'active' | 'inactive' | 'error' | 'reloading';
+    status?: 'draft' | 'active' | 'inactive' | 'error' | 'reloading';
     application_id?: string;
   }): Promise<AgentRegistration[]>;
 
@@ -180,7 +195,7 @@ export interface IDatabaseService {
    */
   updateAgentStatus(
     agentId: string, 
-    status: 'active' | 'inactive' | 'error' | 'reloading',
+    status: 'draft' | 'active' | 'inactive' | 'error' | 'reloading',
     errorMessage?: string
   ): Promise<void>;
 

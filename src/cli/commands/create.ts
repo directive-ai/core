@@ -120,7 +120,7 @@ const createAgentCommand = new Command('agent')
       await updateApplicationCard(agentInfo.app, agentInfo.name);
 
       // 7. Afficher le message de succès
-      displayAgentSuccessMessage(agentInfo);
+      await displayAgentSuccessMessage(agentInfo);
 
     } catch (error) {
       console.error(chalk.red('❌ Error creating agent:'), error instanceof Error ? error.message : error);
@@ -602,6 +602,61 @@ async function createAgentStructure(agentInfo: Required<CreateAgentOptions>): Pr
   await generateAgentDocumentation(agentPath, agentInfo);
 
   console.log(chalk.green(`✅ Agent structure created in agents/${agentInfo.app}/${agentInfo.name}/`));
+
+  // 4. Enregistrer l'agent en base de données en mode draft
+  await registerAgentInDatabase(agentInfo);
+}
+
+/**
+ * Enregistre l'agent nouvellement créé en base de données avec statut 'draft'
+ */
+async function registerAgentInDatabase(agentInfo: Required<CreateAgentOptions>): Promise<void> {
+  console.log(chalk.yellow('📝 Registering agent in database...'));
+  
+  try {
+    // Lire la configuration de la base de données
+    const dbConfig = await readDatabaseConfig();
+    
+    // Pour le moment, seule la base de données JSON est implémentée
+    if (dbConfig.type === 'json') {
+      const database = new JsonDatabaseService(dbConfig.config.dataDir);
+      await database.initialize();
+
+      // Récupérer l'ID de l'application
+      const app = await database.getApplicationByName(agentInfo.app);
+      if (!app) {
+        throw new Error(`Application "${agentInfo.app}" not found in database. This should not happen after creating the app.`);
+      }
+
+      const agentType = `${agentInfo.app}/${agentInfo.name}`;
+      const agentPath = path.join('agents', agentInfo.app, agentInfo.name, 'agent.ts');
+
+      await database.createAgent({
+        type: agentType,
+        application_id: app.id,
+        name: agentInfo.name,
+        description: agentInfo.description,
+        version: '1.0.0',
+        author: agentInfo.author,
+        file_path: agentPath
+      });
+
+      await database.close();
+      
+      console.log(chalk.green(`✅ Agent registered in ${dbConfig.type} database with status 'draft'`));
+      
+    } else {
+      console.warn(chalk.yellow(`⚠️  Warning: Database type "${dbConfig.type}" not yet implemented for agent registration`));
+      console.warn(chalk.gray('   The agent files were created successfully, but database registration'));
+      console.warn(chalk.gray('   is currently only supported for JSON database type.'));
+    }
+    
+  } catch (error) {
+    console.warn(chalk.yellow('⚠️  Warning: Could not register agent in database'));
+    console.warn(chalk.gray(`   ${error instanceof Error ? error.message : error}`));
+    console.warn(chalk.gray('   The agent files were created successfully, but database registration failed.'));
+    console.warn(chalk.gray(`   You can try deploying the agent with: directive deploy agent ${agentInfo.app}/${agentInfo.name}`));
+  }
 }
 
 /**
@@ -910,7 +965,7 @@ async function updateApplicationCard(appName: string, agentName: string): Promis
 /**
  * Affiche le message de succès final pour un agent
  */
-function displayAgentSuccessMessage(agentInfo: Required<CreateAgentOptions>): void {
+async function displayAgentSuccessMessage(agentInfo: Required<CreateAgentOptions>): Promise<void> {
   console.log(chalk.green('\n🎉 Agent created successfully!'));
   
   console.log(chalk.blue('\n📋 Agent details:'));
@@ -920,8 +975,10 @@ function displayAgentSuccessMessage(agentInfo: Required<CreateAgentOptions>): vo
   console.log(chalk.gray(`   Description: ${agentInfo.description}`));
   console.log(chalk.gray(`   Author: ${agentInfo.author}`));
   console.log(chalk.gray(`   Location: agents/${agentInfo.app}/${agentInfo.name}/`));
+  console.log(chalk.gray(`   Status: draft (created but not deployed)`));
   
   console.log(chalk.blue('\n📋 Next steps:'));
+  console.log(chalk.gray(`   directive deploy agent ${agentInfo.app}/${agentInfo.name}   # Deploy the agent (activate it)`));
   console.log(chalk.gray(`   ls agents/${agentInfo.app}/${agentInfo.name}/               # View agent files`));
   console.log(chalk.gray(`   cat agents/${agentInfo.app}/${agentInfo.name}/desc.mdx      # Read documentation`));
   console.log(chalk.gray(`   directive start                                             # Start server to test agent`));
@@ -930,8 +987,24 @@ function displayAgentSuccessMessage(agentInfo: Required<CreateAgentOptions>): vo
   console.log(chalk.gray(`   agents/${agentInfo.app}/${agentInfo.name}/agent.ts         # XState machine definition`));
   console.log(chalk.gray(`   agents/${agentInfo.app}/${agentInfo.name}/agent.json       # Agent metadata`));
   console.log(chalk.gray(`   agents/${agentInfo.app}/${agentInfo.name}/desc.mdx         # Agent documentation`));
+
+  // Lire la configuration de la base de données pour afficher le bon message
+  const dbConfig = await readDatabaseConfig();
+  switch (dbConfig.type) {
+    case 'json':
+      console.log(chalk.gray(`   ${dbConfig.config.dataDir}/directive.json                # Database registration (draft status)`));
+      break;
+    case 'mongodb':
+      console.log(chalk.gray(`   MongoDB: ${dbConfig.config.database}                     # Database registration (draft status)`));
+      break;
+    case 'postgresql':
+      console.log(chalk.gray(`   PostgreSQL: ${dbConfig.config.database}@${dbConfig.config.host}        # Database registration (draft status)`));
+      break;
+    default:
+      console.log(chalk.gray(`   Database: ${dbConfig.type}                               # Database registration (draft status)`));
+  }
   
-  console.log(chalk.yellow('\n⚠️  Note: The agent is ready! Start the server to test it via API.'));
+  console.log(chalk.yellow('\n⚠️  Note: Agent created with status "draft". Deploy it to activate and make it available for sessions!'));
 }
 
 /**

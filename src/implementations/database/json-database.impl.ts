@@ -388,6 +388,54 @@ export class JsonDatabaseService implements IDatabaseService {
   // Gestion des Agents Directeurs
   // ==========================================
 
+  async createAgent(agent: {
+    type: string;
+    application_id: string;
+    name: string;
+    description: string;
+    version: string;
+    author: string;
+    file_path?: string;
+  }): Promise<AgentRegistration> {
+    await this.ensureInitialized();
+    
+    // Vérifier si un agent avec ce type existe déjà
+    const existingAgent = await this.getAgentByType(agent.type);
+    if (existingAgent) {
+      throw new Error(`Agent "${agent.type}" already exists in database`);
+    }
+
+    const agentId = this.generateId('agent');
+    const now = new Date().toISOString();
+    
+    const newAgent: AgentRegistration = {
+      id: agentId,
+      type: agent.type,
+      application_id: agent.application_id,
+      name: agent.name,
+      description: agent.description,
+      version: agent.version,
+      deployment_version: 0, // Pas encore déployé
+      status: 'draft', // Statut draft - créé mais pas déployé
+      machine_definition: undefined, // Pas de définition de machine pour le moment
+      created_at: now,
+      updated_at: now,
+      deployed_at: '', // Sera renseigné lors du premier déploiement
+      metadata: {
+        file_path: agent.file_path,
+        needs_deployment: true // Nécessite un déploiement
+      }
+    };
+
+    this.data.agents[agentId] = newAgent;
+
+    // Mettre à jour le compteur d'agents de l'application
+    await this.updateApplicationAgentCount(agent.application_id);
+
+    await this.saveData();
+    return newAgent;
+  }
+
   async registerAgent(agent: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>): Promise<AgentRegistration> {
     await this.ensureInitialized();
     
@@ -395,12 +443,47 @@ export class JsonDatabaseService implements IDatabaseService {
     const existingAgent = await this.getAgentByType(agent.type);
     
     if (existingAgent) {
-      // Mise à jour d'un agent existant (redéploiement)
-      return this.deployExistingAgent(existingAgent, agent);
+      if (existingAgent.status === 'draft') {
+        // Premier déploiement d'un agent créé en draft
+        return this.deployDraftAgent(existingAgent, agent);
+      } else {
+        // Mise à jour d'un agent existant déjà déployé (redéploiement)
+        return this.deployExistingAgent(existingAgent, agent);
+      }
     } else {
-      // Nouvel agent (premier déploiement)
+      // Nouvel agent (premier déploiement direct sans création préalable)
       return this.deployNewAgent(agent);
     }
+  }
+
+  /**
+   * Déploie un agent créé en mode draft (premier déploiement)
+   */
+  private async deployDraftAgent(
+    existingAgent: AgentRegistration,
+    updates: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'>
+  ): Promise<AgentRegistration> {
+    const now = new Date().toISOString();
+    
+    const deployedAgent: AgentRegistration = {
+      ...existingAgent,
+      ...updates,
+      id: existingAgent.id, // Garder l'ID original
+      deployment_version: 1, // Premier déploiement
+      status: 'active', // Passe de 'draft' à 'active'
+      deployed_at: now, // Première date de déploiement
+      updated_at: now,
+      // created_at reste inchangé (date de création originale)
+      metadata: {
+        ...existingAgent.metadata,
+        ...updates.metadata,
+        needs_deployment: false // Vient d'être déployé
+      }
+    };
+
+    this.data.agents[existingAgent.id] = deployedAgent;
+    await this.saveData();
+    return deployedAgent;
   }
 
   /**

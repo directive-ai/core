@@ -53,7 +53,7 @@ export interface AgentMetadata {
  */
 export interface RegisteredAgent {
   type: string;                           // Type unique de l'agent
-  status: 'active' | 'error' | 'loading'; // Statut de l'agent
+  status: 'draft' | 'active' | 'error' | 'loading'; // Statut de l'agent
   metadata: AgentMetadata;                // Métadonnées de l'agent
   file_path?: string;                     // Chemin du fichier agent.ts
   hash?: string;                          // Hash du fichier pour cache

@@ -10,7 +10,7 @@ export interface AgentRegistration {
   version: string;                        // Version sémantique (ex: "1.0.0")
   deployment_version: number;             // Version de déploiement incrémentale (1, 2, 3...)
   git_commit_id?: string;                 // ID du commit Git au moment du déploiement
-  status: 'active' | 'inactive' | 'error' | 'reloading'; // Statut de l'agent
+  status: 'draft' | 'active' | 'inactive' | 'error' | 'reloading'; // Statut de l'agent
   machine_definition?: Record<string, any>; // Définition de la machine XState
   created_at: string;                     // Timestamp de première création (premier déploiement)
   updated_at: string;                     // Timestamp de dernière mise à jour
