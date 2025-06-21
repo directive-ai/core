@@ -152,7 +152,8 @@ async function createProjectStructure(projectInfo: InitOptions): Promise<void> {
   // Créer la structure de base
   const directories = [
     projectInfo.name,
-    `${projectInfo.name}/agents`
+    `${projectInfo.name}/agents`,
+    `${projectInfo.name}/dist`
   ];
 
   // Ajouter data/ seulement pour JSON local
@@ -181,7 +182,10 @@ async function generateProjectFiles(projectInfo: InitOptions): Promise<void> {
   // 2. TypeScript configuration
   await generateTsConfig(projectPath);
   
-  // 3. Directive configuration
+  // 3. Webpack configuration
+  await generateWebpackConfig(projectPath);
+  
+  // 4. Directive configuration
   await generateDirectiveConfig(projectPath, projectInfo);
   
   // 4. README du projet
@@ -211,7 +215,10 @@ async function generatePackageJson(projectPath: string, projectInfo: InitOptions
     "xstate": "^5.20.0",
     "@types/node": "^24.0.0",
     "jest": "^30.0.0",
-    "@types/jest": "^30.0.0"
+    "@types/jest": "^30.0.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1"
   };
 
   // Ajouter des dépendances spécifiques selon le type de base de données
@@ -236,9 +243,11 @@ async function generatePackageJson(projectPath: string, projectInfo: InitOptions
     author: projectInfo.author,
     main: "index.js",
     scripts: {
-      "build": "tsc",
+      "build": "webpack --mode production",
+      "build:agent": "webpack --mode production --env agent",
+      "dev": "webpack --mode development --watch",
       "start": "directive start",
-      "dev": "directive start --watch",
+      "dev:server": "directive start --watch",
       "agent:list": "directive agent list",
       "agent:create": "directive agent create",
       "test": "jest"
@@ -282,6 +291,74 @@ async function generateTsConfig(projectPath: string): Promise<void> {
   await fs.writeFile(
     path.join(projectPath, 'tsconfig.json'),
     JSON.stringify(tsConfig, null, 2)
+  );
+}
+
+/**
+ * Génère la configuration Webpack avec externalization
+ */
+async function generateWebpackConfig(projectPath: string): Promise<void> {
+  const webpackConfig = `const path = require('path');
+
+module.exports = (env, argv) => {
+  const isProduction = argv.mode === 'production';
+  const isAgent = env && env.agent;
+  
+  const config = {
+    mode: isProduction ? 'production' : 'development',
+    
+    // Entry: si agent spécifique fourni, sinon tous les agents
+    entry: isAgent 
+      ? \`./agents/\${env.agent}/agent.ts\`
+      : './agents/**/agent.ts',
+    
+    externals: {
+      // Externalize dependencies that will be provided by @directive/core
+      'xstate': 'commonjs xstate',
+      '@directive/core': 'commonjs @directive/core'
+    },
+    
+    module: {
+      rules: [
+        {
+          test: /\\.ts$/,
+          use: 'ts-loader',
+          exclude: /node_modules/,
+        },
+      ],
+    },
+    
+    resolve: {
+      extensions: ['.ts', '.js'],
+      alias: {
+        '@': path.resolve(__dirname, 'agents')
+      }
+    },
+    
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: isAgent ? \`\${env.agent}.js\` : '[name].js',
+      library: 'Agent',
+      libraryTarget: 'commonjs2',
+      clean: true
+    },
+    
+    target: 'node',
+    
+    optimization: {
+      minimize: isProduction
+    },
+    
+    devtool: isProduction ? false : 'source-map'
+  };
+  
+  return config;
+};
+`;
+
+  await fs.writeFile(
+    path.join(projectPath, 'webpack.config.js'),
+    webpackConfig
   );
 }
 

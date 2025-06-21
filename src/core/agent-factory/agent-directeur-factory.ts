@@ -1,8 +1,8 @@
 import { createMachine, interpret } from 'xstate';
-import { IDatabaseService } from '../../interfaces/database.interface';
-import { AgentRegistration, DeployAgentRequest, DeployAgentResponse, GitCommitStrategy } from '../../dto/index';
+import { IDatabaseService } from '../../interfaces/database.interface.js';
+import { AgentRegistration, DeployAgentRequest, DeployAgentResponse, GitCommitStrategy } from '../../dto/index.js';
 import * as crypto from 'crypto';
-import { ensureCommitted, getCurrentGitCommitId } from './git-utils';
+import { ensureCommitted, getCurrentGitCommitId } from './git-utils.js';
 
 /**
  * Interface pour une définition de machine d'agent directeur
@@ -117,12 +117,21 @@ export class AgentDirecteurFactory {
 
     try {
       // 1. Valider la machine XState
+      console.log('🔍 [DEBUG] Starting machine validation...');
       await this.validateMachine(machineDefinition);
+      console.log('✅ [DEBUG] Machine validation passed');
 
       // 2. Calculer le hash du code source
+      console.log('🔍 [DEBUG] Calculating machine hash...');
       const sourceHash = this.calculateMachineHash(machineDefinition);
+      console.log('✅ [DEBUG] Machine hash calculated:', sourceHash);
 
       // 3. Préparer les données pour la BDD
+      console.log('🔍 [DEBUG] Preparing agent data for database...');
+      console.log('🔍 [DEBUG] Serializing machine...');
+      const serializedMachine = this.serializeMachine(machineDefinition);
+      console.log('✅ [DEBUG] Machine serialized');
+      
       const agentData: Omit<AgentRegistration, 'id' | 'created_at' | 'updated_at' | 'deployed_at'> = {
         type: agentType,
         application_id: metadata.application_id,
@@ -132,7 +141,7 @@ export class AgentDirecteurFactory {
         deployment_version: 1, // Sera incrémenté automatiquement si agent existant
         git_commit_id: gitResult.commit_id, // ID du commit Git correspondant au code
         status: 'active',
-        machine_definition: this.serializeMachine(machineDefinition),
+        machine_definition: serializedMachine,
         metadata: {
           file_path: metadata.file_path,
           source_hash: sourceHash,
@@ -140,14 +149,20 @@ export class AgentDirecteurFactory {
           deployment_strategy: 'wait'
         }
       };
+      console.log('✅ [DEBUG] Agent data prepared');
 
       // 4. Enregistrer en BDD (avec versioning automatique)
+      console.log('🔍 [DEBUG] Getting existing agent...');
       const existingAgent = await this.database.getAgentByType(agentType);
       const oldVersion = existingAgent?.deployment_version || 0;
+      console.log('✅ [DEBUG] Existing agent checked, oldVersion:', oldVersion);
       
+      console.log('🔍 [DEBUG] Registering agent in database...');
       const registeredAgent = await this.database.registerAgent(agentData);
+      console.log('✅ [DEBUG] Agent registered in database');
 
       // 5. Mettre à jour le cache en mémoire
+      console.log('🔍 [DEBUG] Updating cache...');
       this.machineDefinitions.set(agentType, {
         machine: machineDefinition,
         metadata: {
@@ -156,10 +171,12 @@ export class AgentDirecteurFactory {
           version: metadata.version
         }
       });
+      console.log('✅ [DEBUG] Cache updated');
 
       const deploymentTime = Date.now() - startTime;
 
       // Enrichir le message avec les informations Git
+      console.log('🔍 [DEBUG] Building response message...');
       let message = `Agent ${agentType} deployed successfully (v${oldVersion} → v${registeredAgent.deployment_version})`;
       if (gitResult.commit_id) {
         message += ` @ ${gitResult.commit_id.substring(0, 7)}`;
@@ -167,7 +184,13 @@ export class AgentDirecteurFactory {
       if (gitResult.was_dirty && gitResult.strategy_used === 'auto-commit') {
         message += ` (auto-committed ${gitResult.committed_files?.length || 0} files)`;
       }
+      console.log('✅ [DEBUG] Message built');
 
+      console.log('🔍 [DEBUG] Getting active sessions count...');
+      const activeSessionsCount = await this.getActiveSessionsCount(agentType);
+      console.log('✅ [DEBUG] Active sessions count:', activeSessionsCount);
+
+      console.log('🔍 [DEBUG] Building final response...');
       return {
         success: true,
         agent_type: agentType,
@@ -178,7 +201,7 @@ export class AgentDirecteurFactory {
         git_was_dirty: gitResult.was_dirty,
         git_committed_files: gitResult.committed_files,
         deployed_at: registeredAgent.deployed_at,
-        affected_sessions: await this.getActiveSessionsCount(agentType),
+        affected_sessions: activeSessionsCount,
         compilation_time_ms: 0, // Pas de compilation ici, juste validation
         deployment_time_ms: deploymentTime,
         message,
@@ -349,7 +372,10 @@ export class AgentDirecteurFactory {
    * Calcule le hash d'une machine pour détecter les changements
    */
   private calculateMachineHash(machine: any): string {
+    console.log('🔍 [DEBUG] Machine type for hash:', typeof machine);
+    console.log('🔍 [DEBUG] Machine.config type:', typeof machine.config);
     const machineString = JSON.stringify(machine.config);
+    console.log('🔍 [DEBUG] Machine config stringified, length:', machineString.length);
     return crypto.createHash('md5').update(machineString).digest('hex');
   }
 
@@ -371,8 +397,18 @@ export class AgentDirecteurFactory {
    * Compte le nombre de sessions actives pour un agent
    */
   private async getActiveSessionsCount(agentType: string): Promise<number> {
-    const activeSessions = await this.database.getActiveSessions();
-    return activeSessions.filter(session => session.agent_directeur_type === agentType).length;
+    try {
+      const activeSessions = await this.database.getActiveSessions();
+      // Gérer le cas où getActiveSessions retourne undefined/null
+      if (!activeSessions || !Array.isArray(activeSessions)) {
+        console.log('🔍 [DEBUG] No active sessions or invalid result from database');
+        return 0;
+      }
+      return activeSessions.filter(session => session.agent_directeur_type === agentType).length;
+    } catch (error) {
+      console.error('❌ [DEBUG] Error getting active sessions count:', error);
+      return 0; // Valeur par défaut sûre
+    }
   }
 
   /**

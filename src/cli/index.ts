@@ -7,6 +7,7 @@ import chalk from 'chalk';
 import { initCommand } from './commands/init.js';
 import { createCommand } from './commands/create.js';
 import { listCommand } from './commands/list.js';
+import { deployCommand } from './commands/deploy.js';
 import { agentCommand } from './commands/agent.js';
 // import { startCommand } from './commands/start.js';
 
@@ -30,6 +31,7 @@ program.exitOverride((err) => {
 program.addCommand(initCommand);
 program.addCommand(createCommand);
 program.addCommand(listCommand);
+program.addCommand(deployCommand);
 program.addCommand(agentCommand);
 // program.addCommand(startCommand);
 

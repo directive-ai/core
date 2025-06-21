@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { GitCommitStrategy } from '../../dto/index';
+import { GitCommitStrategy } from '../../dto/index.js';
 
 /**
  * Récupère l'ID du commit Git actuel
