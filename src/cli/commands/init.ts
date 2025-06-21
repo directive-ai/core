@@ -11,6 +11,7 @@ interface InitOptions {
   description?: string;
   skipInstall?: boolean;
   database?: 'json' | 'mongodb' | 'postgresql';
+  local?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export const initCommand = new Command('init')
   .option('--description <description>', 'Project description')
   .option('--database <type>', 'Database type: json (default), mongodb, postgresql')
   .option('--skip-install', 'Skip automatic npm install')
+  .option('--local', 'Use local development version of @directive/core (requires tarball)')
   .action(async (projectName?: string, options?: Partial<InitOptions>) => {
     try {
       console.log(chalk.blue('🚀 Initializing new Directive project...\n'));
@@ -35,6 +37,11 @@ export const initCommand = new Command('init')
       
       // 3. Générer les fichiers de configuration
       await generateProjectFiles(projectInfo);
+      
+      // Afficher info sur version locale si utilisée
+      if (projectInfo.local) {
+        console.log(chalk.yellow('🔧 Using local development version of @directive/core'));
+      }
       
       // 4. Installer les dépendances
       if (!projectInfo.skipInstall) {
@@ -129,7 +136,8 @@ async function collectProjectInfo(projectName?: string, options?: Partial<InitOp
     author: options?.author || answers.author,
     description: options?.description || answers.description,
     database: options?.database || answers.database || 'json',
-    skipInstall: options?.skipInstall || false
+    skipInstall: options?.skipInstall || false,
+    local: options?.local || false
   };
 }
 
@@ -209,8 +217,21 @@ async function generateProjectFiles(projectInfo: InitOptions): Promise<void> {
  * Génère le package.json du projet utilisateur
  */
 async function generatePackageJson(projectPath: string, projectInfo: InitOptions): Promise<void> {
+  let directiveCoreVersion = '^1.0.0';
+  
+  // Utiliser le tarball local si demandé
+  if (projectInfo.local) {
+    const tarballPath = path.resolve(process.cwd(), 'directive-core-1.0.0.tgz');
+    try {
+      await fs.access(tarballPath);
+      directiveCoreVersion = tarballPath;
+    } catch {
+      throw new Error(`Local tarball not found: ${tarballPath}\nRun 'npm pack' in the @directive/core directory first.`);
+    }
+  }
+
   const baseDependencies = {
-    "@directive/core": "^1.0.0",
+    "@directive/core": directiveCoreVersion,
     "typescript": "~5.8.0",
     "xstate": "^5.20.0",
     "@types/node": "^24.0.0",
@@ -667,6 +688,10 @@ function displaySuccessMessage(projectInfo: InitOptions): void {
 
   console.log(chalk.green('\n🎉 Directive project created successfully!'));
   console.log(databaseMessages[projectInfo.database!]);
+  
+  if (projectInfo.local) {
+    console.log(chalk.yellow('🔧 Using local development version of @directive/core'));
+  }
   
   console.log(chalk.blue('\n📋 Next steps:'));
   console.log(chalk.gray('   cd ' + projectInfo.name));

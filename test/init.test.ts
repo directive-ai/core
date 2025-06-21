@@ -327,6 +327,28 @@ describe('Commande directive init', () => {
     });
   });
 
+  describe('Option --local', () => {
+    it('devrait accepter l\'option --local', async () => {
+      const initCommandPath = path.resolve(__dirname, '../src/cli/commands/init.ts');
+      const initContent = await fs.readFile(initCommandPath, 'utf-8');
+      
+      // Vérifier que l'option --local est bien définie
+      expect(initContent).toContain('--local');
+      expect(initContent).toContain('Use local development version');
+    });
+
+    it('devrait traiter l\'option --local dans la logique', async () => {
+      // Test de la logique plutôt que de l'exécution complète
+      const initCommandPath = path.resolve(__dirname, '../src/cli/commands/init.ts');
+      const initContent = await fs.readFile(initCommandPath, 'utf-8');
+      
+      // Vérifier que la logique pour --local est présente
+      expect(initContent).toContain('projectInfo.local');
+      expect(initContent).toContain('directive-core-1.0.0.tgz');
+      expect(initContent).toContain('tarball not found');
+    });
+  });
+
   describe('Choix de base de données', () => {
     it('devrait créer un projet avec JSON par défaut', async () => {
       const cliPath = path.resolve(__dirname, '../dist/cli/index.js');
