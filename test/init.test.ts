@@ -62,10 +62,11 @@ describe('Commande directive init', () => {
       
       execSync(command, { cwd: tempDir, stdio: 'pipe' });
 
-      // Vérifier que tous les fichiers sont créés (sans app par défaut)
+      // Vérifier que tous les fichiers sont créés (avec webpack)
       const expectedFiles = [
         'package.json',
         'tsconfig.json',
+        'webpack.config.js',
         'directive-conf.ts',
         'README.md',
         '.gitignore',
@@ -94,16 +95,20 @@ describe('Commande directive init', () => {
       expect(packageJson.author).toBe('Test Author');
       expect(packageJson.description).toBe('Test Project');
 
-      // Vérifier les scripts
+      // Vérifier les scripts (architecture webpack)
       expect(packageJson.scripts).toHaveProperty('start', 'directive start');
-      expect(packageJson.scripts).toHaveProperty('dev', 'directive start --watch');
-      expect(packageJson.scripts).toHaveProperty('build', 'tsc');
+      expect(packageJson.scripts).toHaveProperty('dev', 'webpack --mode development --watch');
+      expect(packageJson.scripts).toHaveProperty('build', 'webpack --mode production');
 
-      // Vérifier les dépendances avec versions flexibles
+      // Vérifier les dépendances avec versions flexibles (webpack)
       expect(packageJson.devDependencies).toHaveProperty('@directive/core', '^1.0.0');
       expect(packageJson.devDependencies).toHaveProperty('typescript', '~5.8.0'); // Tilde pour minor lock
       expect(packageJson.devDependencies).toHaveProperty('xstate', '^5.20.0');
       expect(packageJson.devDependencies).toHaveProperty('@types/node', '^24.0.0');
+      // Nouvelles dépendances webpack
+      expect(packageJson.devDependencies).toHaveProperty('webpack', '^5.89.0');
+      expect(packageJson.devDependencies).toHaveProperty('webpack-cli', '^5.1.4');
+      expect(packageJson.devDependencies).toHaveProperty('ts-loader', '^9.5.1');
     });
 
     it('devrait générer une configuration TypeScript valide simplifiée', async () => {
@@ -116,11 +121,11 @@ describe('Commande directive init', () => {
       const tsconfigContent = await fs.readFile(tsconfigPath, 'utf-8');
       const tsconfig = JSON.parse(tsconfigContent);
 
-      // Vérifier la configuration TypeScript
+      // Vérifier la configuration TypeScript (webpack - strict mode relaxé)
       expect(tsconfig.compilerOptions.target).toBe('ES2020');
       expect(tsconfig.compilerOptions.module).toBe('ESNext');
       expect(tsconfig.compilerOptions.moduleResolution).toBe('node');
-      expect(tsconfig.compilerOptions.strict).toBe(true);
+      expect(tsconfig.compilerOptions.strict).toBe(false);
       
       // Vérifier les chemins absolus simplifiés
       expect(tsconfig.compilerOptions.paths).toHaveProperty('@/*');

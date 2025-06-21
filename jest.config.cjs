@@ -4,7 +4,10 @@ module.exports = {
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { 
+      isolatedModules: true,
+      allowJs: true
+    }],
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   collectCoverageFrom: [
@@ -22,4 +25,5 @@ module.exports = {
     '^@/dto/(.*)$': '<rootDir>/src/dto/$1',
     '^@/cli/(.*)$': '<rootDir>/src/cli/$1',
   },
+  resolver: '<rootDir>/jest.resolver.cjs',
 }; 
