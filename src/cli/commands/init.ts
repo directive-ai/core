@@ -4,8 +4,17 @@ import chalk from 'chalk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { execSync } from 'child_process';
+import { 
+  hasGlobalConfig, 
+  setGlobalConfig, 
+  createDefaultGlobalConfig,
+  initializeGlobalDatabase,
+  getGlobalConfigPath,
+  getGlobalDbPath 
+} from '../utils/global-config.js';
 
-interface InitOptions {
+// Legacy interface pour projet complet (utilisée par les fonctions extractes)
+interface LegacyInitOptions {
   name: string;
   author?: string;
   description?: string;
@@ -14,53 +23,169 @@ interface InitOptions {
   local?: boolean;
 }
 
+// Nouvelle interface pour setup global seulement
+interface GlobalInitOptions {
+  author?: string;
+  database?: 'json' | 'mongodb' | 'postgresql';
+  force?: boolean;
+}
+
 /**
- * Commande directive init pour créer un nouveau projet d'agents directeurs
+ * Commande directive init pour setup global de Directive
  */
 export const initCommand = new Command('init')
-  .description('Initialize a new Directive project')
-  .argument('[project-name]', 'Name of the project to create')
-  .option('--author <author>', 'Project author')
-  .option('--description <description>', 'Project description')
-  .option('--database <type>', 'Database type: json (default), mongodb, postgresql')
-  .option('--skip-install', 'Skip automatic npm install')
-  .option('--local', 'Use local development version of @directive/core (requires tarball)')
-  .action(async (projectName?: string, options?: Partial<InitOptions>) => {
+  .description('Initialize Directive global configuration (run once per system)')
+  .option('--author <author>', 'Default author name for projects')
+  .option('--database <type>', 'Global database type: json (default), mongodb, postgresql')
+  .option('--force', 'Force reinitialize even if config exists')
+  .action(async (options?: Partial<GlobalInitOptions>) => {
     try {
-      console.log(chalk.blue('🚀 Initializing new Directive project...\n'));
+      console.log(chalk.blue('🚀 Initializing Directive global setup...\n'));
 
-      // 1. Collecter les informations du projet
-      const projectInfo = await collectProjectInfo(projectName, options);
+      // 1. Vérifier si config globale existe déjà
+      const configExists = await hasGlobalConfig();
+      if (configExists && !options?.force) {
+        console.log(chalk.yellow('⚠️ Directive is already initialized.'));
+        console.log(chalk.gray(`Config file: ${getGlobalConfigPath()}`));
+        console.log(chalk.gray(`Database: ${getGlobalDbPath()}`));
+        console.log(chalk.blue('\nTo create a new project: directive create app <project-name>'));
+        console.log(chalk.gray('To force reinitialize: directive init --force'));
+        return;
+      }
+
+      if (configExists && options?.force) {
+        console.log(chalk.yellow('🔄 Force reinitializing Directive configuration...\n'));
+      }
+
+      // 2. Collecter les préférences globales
+      const globalPrefs = await collectGlobalPreferences(options);
       
-      // 2. Créer la structure du projet
-      await createProjectStructure(projectInfo);
+      // 3. Créer la configuration globale
+      const globalConfig = createDefaultGlobalConfig(globalPrefs.author);
+      globalConfig.database.type = globalPrefs.database;
       
-      // 3. Générer les fichiers de configuration
-      await generateProjectFiles(projectInfo);
-      
-      // Afficher info sur version locale si utilisée
-      if (projectInfo.local) {
-        console.log(chalk.yellow('🔧 Using local development version of @directive/core'));
+      // Adapter la config BDD selon le type
+      if (globalPrefs.database === 'mongodb') {
+        globalConfig.database.config = {
+          url: process.env.MONGODB_URL || 'mongodb://localhost:27017',
+          database: process.env.MONGODB_DATABASE || 'directive'
+        };
+      } else if (globalPrefs.database === 'postgresql') {
+        globalConfig.database.config = {
+          host: process.env.POSTGRES_HOST || 'localhost',
+          port: parseInt(process.env.POSTGRES_PORT || '5432'),
+          database: process.env.POSTGRES_DATABASE || 'directive',
+          username: process.env.POSTGRES_USERNAME || 'directive',
+          password: process.env.POSTGRES_PASSWORD || 'directive'
+        };
       }
       
-      // 4. Installer les dépendances
-      if (!projectInfo.skipInstall) {
-        await installDependencies(projectInfo.name);
-      }
+      // 4. Sauvegarder la configuration globale
+      await setGlobalConfig(globalConfig);
       
-      // 5. Afficher les instructions finales
-      displaySuccessMessage(projectInfo);
+      // 5. Initialiser la base de données globale
+      await initializeGlobalDatabase();
+      
+      // 6. Afficher le message de succès
+      displayGlobalSetupSuccess(globalConfig);
       
     } catch (error) {
-      console.error(chalk.red('❌ Error during initialization:'), error instanceof Error ? error.message : error);
+      console.error(chalk.red('❌ Error during global initialization:'), error instanceof Error ? error.message : error);
       process.exit(1);
     }
   });
 
 /**
- * Collecte les informations du projet via prompts interactifs
+ * Collecte les préférences globales pour setup Directive
  */
-async function collectProjectInfo(projectName?: string, options?: Partial<InitOptions>): Promise<InitOptions> {
+async function collectGlobalPreferences(options?: Partial<GlobalInitOptions>): Promise<Required<GlobalInitOptions>> {
+  const questions = [];
+
+  // Auteur par défaut
+  if (!options?.author) {
+    questions.push({
+      type: 'input',
+      name: 'author',
+      message: 'Default author name for new projects:',
+      default: 'Directive Team'
+    });
+  }
+
+  // Type de base de données globale
+  if (!options?.database) {
+    questions.push({
+      type: 'list',
+      name: 'database',
+      message: 'Global database type:',
+      choices: [
+        {
+          name: 'JSON (File-based) - Recommended for development',
+          value: 'json',
+          short: 'JSON'
+        },
+        {
+          name: 'MongoDB (External database)',
+          value: 'mongodb',
+          short: 'MongoDB'
+        },
+        {
+          name: 'PostgreSQL (External database)',
+          value: 'postgresql', 
+          short: 'PostgreSQL'
+        }
+      ],
+      default: 'json'
+    });
+  }
+
+  // Si toutes les options sont fournies, pas besoin de prompt
+  let answers: any = {};
+  if (questions.length > 0) {
+    answers = await inquirer.prompt(questions);
+  }
+
+  return {
+    author: options?.author || answers.author || 'Directive Team',
+    database: options?.database || answers.database || 'json',
+    force: options?.force || false
+  };
+}
+
+/**
+ * Affiche le message de succès du setup global
+ */
+function displayGlobalSetupSuccess(globalConfig: any): void {
+  console.log(chalk.green('\n🎉 Directive global setup completed successfully!\n'));
+  
+  console.log(chalk.blue('📋 Configuration:'));
+  console.log(chalk.gray(`   Config file: ${getGlobalConfigPath()}`));
+  console.log(chalk.gray(`   Database: ${globalConfig.database.type} at ${getGlobalDbPath()}`));
+  console.log(chalk.gray(`   Default author: ${globalConfig.preferences.defaultAuthor}`));
+  
+  if (globalConfig.database.type !== 'json') {
+    console.log(chalk.blue('\n🗄️ Database Setup:'));
+    if (globalConfig.database.type === 'mongodb') {
+      console.log(chalk.gray('   Make sure MongoDB is running and accessible'));
+      console.log(chalk.gray('   URL: ' + globalConfig.database.config.url));
+    } else if (globalConfig.database.type === 'postgresql') {
+      console.log(chalk.gray('   Make sure PostgreSQL is running and accessible'));
+      console.log(chalk.gray('   Host: ' + globalConfig.database.config.host + ':' + globalConfig.database.config.port));
+    }
+  }
+  
+  console.log(chalk.blue('\n📚 Next steps:'));
+  console.log(chalk.gray('   1. Create your first project: directive create app <project-name>'));
+  console.log(chalk.gray('   2. Navigate to your project: cd <project-name>'));
+  console.log(chalk.gray('   3. Create your first agent: directive create agent <agent-name>'));
+  console.log(chalk.gray('   4. Start the server: directive start'));
+  
+  console.log(chalk.blue('\n🌟 Happy coding with Directive!'));
+}
+
+/**
+ * Collecte les informations du projet via prompts interactifs (LEGACY - utilisée par project-setup.ts)
+ */
+async function collectProjectInfo(projectName?: string, options?: Partial<LegacyInitOptions>): Promise<LegacyInitOptions> {
   const questions = [];
 
   // Nom du projet
@@ -144,7 +269,7 @@ async function collectProjectInfo(projectName?: string, options?: Partial<InitOp
 /**
  * Crée la structure de répertoires du projet
  */
-async function createProjectStructure(projectInfo: InitOptions): Promise<void> {
+async function createProjectStructure(projectInfo: LegacyInitOptions): Promise<void> {
   console.log(chalk.yellow('📁 Creating project structure...'));
 
   const projectPath = path.resolve(projectInfo.name);
@@ -179,7 +304,7 @@ async function createProjectStructure(projectInfo: InitOptions): Promise<void> {
 /**
  * Génère tous les fichiers de configuration et templates
  */
-async function generateProjectFiles(projectInfo: InitOptions): Promise<void> {
+async function generateProjectFiles(projectInfo: LegacyInitOptions): Promise<void> {
   console.log(chalk.yellow('📝 Generating configuration files...'));
 
   const projectPath = path.resolve(projectInfo.name);
@@ -216,7 +341,7 @@ async function generateProjectFiles(projectInfo: InitOptions): Promise<void> {
 /**
  * Génère le package.json du projet utilisateur
  */
-async function generatePackageJson(projectPath: string, projectInfo: InitOptions): Promise<void> {
+async function generatePackageJson(projectPath: string, projectInfo: LegacyInitOptions): Promise<void> {
   let directiveCoreVersion = '^1.0.0';
   
   // Utiliser le tarball local si demandé
@@ -398,7 +523,7 @@ module.exports = (env, argv) => {
 /**
  * Génère la configuration Directive
  */
-async function generateDirectiveConfig(projectPath: string, projectInfo: InitOptions): Promise<void> {
+async function generateDirectiveConfig(projectPath: string, projectInfo: LegacyInitOptions): Promise<void> {
   const databaseConfigs = {
     json: {
       type: 'json' as const,
@@ -471,7 +596,7 @@ export default directiveConfig;
 /**
  * Génère le README.md du projet
  */
-async function generateProjectReadme(projectPath: string, projectInfo: InitOptions): Promise<void> {
+async function generateProjectReadme(projectPath: string, projectInfo: LegacyInitOptions): Promise<void> {
   const readmeContent = `# ${projectInfo.name}
 
 ${projectInfo.description}
@@ -599,7 +724,7 @@ directive create agent --app my-app --name my-first-agent
 /**
  * Génère le .gitignore
  */
-async function generateGitignore(projectPath: string, projectInfo: InitOptions): Promise<void> {
+async function generateGitignore(projectPath: string, projectInfo: LegacyInitOptions): Promise<void> {
   let gitignore = `# Dependencies
 node_modules/
 npm-debug.log*
@@ -666,7 +791,7 @@ async function installDependencies(projectName: string): Promise<void> {
 /**
  * Affiche le message de succès final
  */
-function displaySuccessMessage(projectInfo: InitOptions): void {
+function displaySuccessMessage(projectInfo: LegacyInitOptions): void {
   const databaseMessages = {
     json: chalk.green('✅ Local JSON database configured'),
     mongodb: chalk.yellow('⚠️  MongoDB connection configured - make sure MongoDB is running'),
@@ -712,7 +837,7 @@ function displaySuccessMessage(projectInfo: InitOptions): void {
 /**
  * Génère le fichier .env.example pour les bases de données externes
  */
-async function generateEnvExample(projectPath: string, projectInfo: InitOptions): Promise<void> {
+async function generateEnvExample(projectPath: string, projectInfo: LegacyInitOptions): Promise<void> {
   const envTemplates = {
     mongodb: `# MongoDB Configuration
 MONGODB_URL=mongodb://localhost:27017

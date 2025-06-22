@@ -1,0 +1,89 @@
+# workflow
+
+Agent de workflow principal
+
+## Informations
+
+- **Type**: `test-v2/workflow`
+- **Auteur**: Test User
+- **Version**: 1.0.0
+- **Architecture**: Directive v2.0 (simplifiée)
+
+## Description
+
+Cet agent fait partie du projet **test-v2** et utilise la nouvelle architecture Directive v2.0 avec une structure simplifiée.
+
+### Fonctionnalités
+
+- ✅ Machine XState pour la logique métier
+- ✅ Structure simplifiée `agents/workflow/`
+- ✅ Base de données globale `~/.directive/data/`
+- ✅ Type d'agent: `test-v2/workflow`
+
+## Usage
+
+### Déploiement
+
+```bash
+directive deploy agent workflow
+```
+
+### Test via API
+
+```bash
+# Démarrer le serveur
+directive start
+
+# Créer une session
+curl -X POST http://localhost:3000/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"agent_type": "test-v2/workflow"}'
+
+# Lister les agents
+curl http://localhost:3000/agents
+```
+
+## Structure du Projet
+
+```
+test-v2/
+├── agents/
+│   └── workflow/
+│       ├── agent.ts          # Machine XState
+│       ├── agent.json        # Métadonnées
+│       └── desc.mdx          # Cette documentation
+├── directive-conf.ts         # Configuration application
+└── package.json              # Dépendances
+```
+
+## Développement
+
+### Modifier la logique
+
+Éditez le fichier `agent.ts` pour personnaliser la machine XState :
+
+```typescript
+export const workflowMachine = createMachine({
+  // Votre logique ici
+});
+```
+
+### États disponibles
+
+- **idle**: État initial, en attente
+- **processing**: Traitement en cours  
+- **success**: Traitement réussi
+- **error**: Erreur rencontrée
+
+## Architecture v2.0
+
+Cette version utilise la nouvelle architecture Directive v2.0 :
+
+- 🌍 **Configuration globale**: `~/.directive/config.json`
+- 🗄️ **Base de données globale**: `~/.directive/data/`
+- 📁 **Structure simplifiée**: Plus de sous-applications
+- 🔗 **Mapping automatique**: Projet = Application
+
+---
+
+Créé avec Directive v2.0 le 22/06/2025

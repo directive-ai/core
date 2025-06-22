@@ -1,0 +1,35 @@
+{
+  "name": "test-v2",
+  "version": "1.0.0",
+  "description": "Directive agents application test-v2",
+  "author": "Test User",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode production",
+    "build:agent": "webpack --mode production --env agent",
+    "dev": "webpack --mode development --watch",
+    "start": "directive start",
+    "dev:server": "directive start --watch",
+    "agent:list": "directive agent list",
+    "agent:create": "directive agent create",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@directive/core": "file:../directive-core-1.0.0.tgz",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "~5.8.0",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "xstate": "^5.20.0"
+  },
+  "keywords": [
+    "directive",
+    "agents",
+    "ai",
+    "workflow"
+  ],
+  "license": "MIT"
+}

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { JsonDatabaseService } from '../../implementations/database/json-database.impl.js';
 
 interface AgentMetadata {
   id: string;
@@ -12,7 +13,9 @@ interface AgentMetadata {
   version: string;
   application: string;
   created_at: string;
-  xstate_version: string;
+  deployment_version: number;
+  status: 'draft' | 'active' | 'inactive';
+  deployed_at?: string;
   states: string[];
 }
 
@@ -23,6 +26,7 @@ interface ApplicationCard {
   author: string;
   version: string;
   agents: string[];
+  agents_count: number;
   metadata: {
     category: string;
     tags: string[];
@@ -31,28 +35,30 @@ interface ApplicationCard {
 }
 
 /**
- * Commande directive list pour lister applications et agents
+ * Commande directive list pour lister applications et agents (v2.0 - Base de données globale)
  */
 export const listCommand = new Command('list')
-  .description('List applications and agents');
+  .description('List applications and agents from global database');
 
 /**
- * Sous-commande pour lister les applications
+ * Sous-commande pour lister les applications depuis la base de données globale
  */
 const listAppsCommand = new Command('app')
-  .description('List all applications')
+  .description('List all applications from global database')
   .action(async () => {
     try {
-      console.log(chalk.blue('📱 Listing Directive applications...\n'));
+      console.log(chalk.blue('📱 Listing Directive applications (global database)...\n'));
 
-      // 1. Vérifier qu'on est dans un projet Directive
-      await validateDirectiveProject();
+      // 1. Initialiser la base de données globale
+      const database = await initGlobalDatabase();
 
-      // 2. Scanner et lister les applications
-      const apps = await scanApplications();
+      // 2. Récupérer les applications depuis la BDD
+      const apps = await getApplicationsFromDatabase(database);
 
       // 3. Afficher les résultats
       displayApplicationsList(apps);
+      
+      await database.close();
 
     } catch (error) {
       console.error(chalk.red('❌ Error listing applications:'), error instanceof Error ? error.message : error);
@@ -61,23 +67,26 @@ const listAppsCommand = new Command('app')
   });
 
 /**
- * Sous-commande pour lister les agents
+ * Sous-commande pour lister les agents depuis la base de données globale
  */
 const listAgentsCommand = new Command('agents')
-  .description('List all available agents')
+  .description('List all agents from global database')
   .option('--app <app-name>', 'Filter by application name')
-  .action(async (options?: { app?: string }) => {
+  .option('--status <status>', 'Filter by status: draft, active, inactive')
+  .action(async (options?: { app?: string; status?: 'draft' | 'active' | 'inactive' }) => {
     try {
-      console.log(chalk.blue('📋 Listing Directive agents...\n'));
+      console.log(chalk.blue('📋 Listing Directive agents (global database)...\n'));
 
-      // 1. Vérifier qu'on est dans un projet Directive
-      await validateDirectiveProject();
+      // 1. Initialiser la base de données globale
+      const database = await initGlobalDatabase();
 
-      // 2. Scanner et lister les agents
-      const agents = await scanAgents(options?.app);
+      // 2. Récupérer les agents depuis la BDD
+      const agents = await getAgentsFromDatabase(database, options);
 
       // 3. Afficher les résultats
-      displayAgentsList(agents, options?.app);
+      displayAgentsList(agents, options);
+      
+      await database.close();
 
     } catch (error) {
       console.error(chalk.red('❌ Error listing agents:'), error instanceof Error ? error.message : error);
@@ -90,7 +99,105 @@ listCommand.addCommand(listAppsCommand);
 listCommand.addCommand(listAgentsCommand);
 
 /**
- * Vérifie qu'on est dans un projet Directive valide
+ * Initialise la connexion à la base de données globale
+ */
+async function initGlobalDatabase(): Promise<JsonDatabaseService> {
+  try {
+    const { getGlobalDbPath } = await import('../utils/global-config.js');
+    const database = new JsonDatabaseService(getGlobalDbPath());
+    await database.initialize();
+    return database;
+  } catch (error) {
+    throw new Error(`Cannot connect to global database. Run "directive init" first. Error: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Récupère les applications depuis la base de données globale
+ */
+async function getApplicationsFromDatabase(database: JsonDatabaseService): Promise<ApplicationCard[]> {
+  try {
+    const applications = await database.getApplications();
+    
+    return applications.map(app => ({
+      id: app.id,
+      name: app.name,
+      description: app.description,
+      author: app.author,
+      version: app.version,
+      agents: [], // Sera rempli si nécessaire
+      agents_count: app.agents_count || 0,
+      metadata: {
+        category: app.metadata?.category || 'default',
+        tags: app.metadata?.tags || [],
+        created_at: app.created_at
+      }
+    }));
+  } catch (error) {
+    throw new Error(`Failed to retrieve applications: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Récupère les agents depuis la base de données globale
+ */
+async function getAgentsFromDatabase(
+  database: JsonDatabaseService, 
+  options?: { app?: string; status?: 'draft' | 'active' | 'inactive' }
+): Promise<AgentMetadata[]> {
+  try {
+    // Récupérer tous les agents
+    const dbAgents = await database.getRegisteredAgents();
+    
+    // Récupérer les applications pour résoudre les noms
+    const applications = await database.getApplications();
+    const appMap = new Map(applications.map(app => [app.id, app.name]));
+    
+    let agents = dbAgents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      type: agent.type,
+      description: agent.description,
+      author: agent.metadata?.author || 'Unknown',
+      version: agent.version,
+      application: appMap.get(agent.application_id) || 'Unknown',
+      created_at: agent.created_at,
+      deployment_version: agent.deployment_version || 0,
+      status: agent.status as 'draft' | 'active' | 'inactive',
+      deployed_at: agent.deployed_at,
+      states: extractStatesFromMachine(agent.machine_definition)
+    }));
+
+    // Filtrer par application si spécifié
+    if (options?.app) {
+      agents = agents.filter(agent => agent.application === options.app);
+    }
+
+    // Filtrer par statut si spécifié
+    if (options?.status) {
+      agents = agents.filter(agent => agent.status === options.status);
+    }
+
+    return agents.sort((a, b) => a.type.localeCompare(b.type));
+    
+  } catch (error) {
+    throw new Error(`Failed to retrieve agents: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Extrait les états d'une machine XState
+ */
+function extractStatesFromMachine(machineDefinition: any): string[] {
+  if (!machineDefinition || !machineDefinition.states) {
+    return [];
+  }
+  
+  return Object.keys(machineDefinition.states);
+}
+
+/**
+ * Vérifie qu'on est dans un projet Directive valide (LEGACY - plus nécessaire pour v2.0)
  */
 async function validateDirectiveProject(): Promise<void> {
   const cwd = process.cwd();
@@ -111,7 +218,7 @@ async function validateDirectiveProject(): Promise<void> {
 }
 
 /**
- * Scanner les applications disponibles
+ * Scanner les applications disponibles (LEGACY - v1.0)
  */
 async function scanApplications(): Promise<ApplicationCard[]> {
   const agentsDir = path.join(process.cwd(), 'agents');
@@ -142,7 +249,7 @@ async function scanApplications(): Promise<ApplicationCard[]> {
 }
 
 /**
- * Scanner les agents disponibles
+ * Scanner les agents disponibles (LEGACY - v1.0)
  */
 async function scanAgents(filterApp?: string): Promise<AgentMetadata[]> {
   const agentsDir = path.join(process.cwd(), 'agents');
@@ -185,12 +292,12 @@ async function scanAgents(filterApp?: string): Promise<AgentMetadata[]> {
 }
 
 /**
- * Affiche la liste des applications
+ * Affiche la liste des applications (v2.0 - avec statuts)
  */
 function displayApplicationsList(apps: ApplicationCard[]): void {
   if (apps.length === 0) {
-    console.log(chalk.yellow('⚠️  No applications found in this project'));
-    console.log(chalk.gray('   Create your first application with: directive create app'));
+    console.log(chalk.yellow('⚠️  No applications found in global database'));
+    console.log(chalk.gray('   Create your first application with: directive create app <project-name>'));
     return;
   }
 
@@ -198,44 +305,45 @@ function displayApplicationsList(apps: ApplicationCard[]): void {
   console.log();
 
   for (const app of apps) {
-    console.log(`   🏠 ${chalk.white(app.name)}`);
+    console.log(`   🏠 ${chalk.white(app.name)} (${chalk.gray(app.id)})`);
     console.log(`      ${chalk.gray(app.description)}`);
-    console.log(`      ${chalk.gray(`v${app.version} • ${app.author} • ${app.agents.length} agents`)}`);
+    console.log(`      ${chalk.gray(`v${app.version} • ${app.author} • ${app.agents_count} agents`)}`);
     
-    if (app.agents.length > 0) {
-      console.log(`      ${chalk.gray(`Agents: ${app.agents.join(', ')}`)}`);
-    }
+    const tags = app.metadata.tags.length > 0 ? app.metadata.tags.join(', ') : 'none';
+    console.log(`      ${chalk.gray(`Category: ${app.metadata.category} • Tags: ${tags}`)}`);
+    console.log(`      ${chalk.gray(`Created: ${new Date(app.metadata.created_at).toLocaleDateString()}`)}`);
     console.log();
   }
 
   console.log(chalk.blue('📋 Next steps:'));
   console.log(chalk.gray('   directive list agents                # View all agents'));
-  console.log(chalk.gray('   directive create agent               # Create a new agent'));
+  console.log(chalk.gray('   directive create agent <name>       # Create a new agent'));
 }
 
 /**
- * Affiche la liste des agents
+ * Affiche la liste des agents (v2.0 - avec statuts de déploiement)
  */
-function displayAgentsList(agents: AgentMetadata[], filterApp?: string): void {
+function displayAgentsList(agents: AgentMetadata[], options?: { app?: string; status?: string }): void {
   if (agents.length === 0) {
-    const message = filterApp 
-      ? `No agents found in application "${filterApp}"`
-      : 'No agents found in this project';
+    let message = 'No agents found in global database';
+    if (options?.app) message = `No agents found for application "${options.app}"`;
+    if (options?.status) message += ` with status "${options.status}"`;
+    
     console.log(chalk.yellow(`⚠️  ${message}`));
-    console.log(chalk.gray('   Create your first agent with: directive create agent'));
+    console.log(chalk.gray('   Create your first agent with: directive create agent <name>'));
     return;
   }
 
-  const title = filterApp 
-    ? `📋 Agents in application "${filterApp}" (${agents.length})`
-    : `📋 All agents (${agents.length})`;
+  let title = `📋 All agents (${agents.length})`;
+  if (options?.app) title = `📋 Agents in application "${options.app}" (${agents.length})`;
+  if (options?.status) title += ` [${options.status}]`;
   
   console.log(chalk.blue(title));
   console.log();
 
-  // Grouper par application si pas de filtre
-  const groupedAgents = filterApp 
-    ? { [filterApp]: agents }
+  // Grouper par application si pas de filtre app
+  const groupedAgents = options?.app 
+    ? { [options.app]: agents }
     : agents.reduce((groups, agent) => {
         const app = agent.application;
         if (!groups[app]) groups[app] = [];
@@ -244,20 +352,51 @@ function displayAgentsList(agents: AgentMetadata[], filterApp?: string): void {
       }, {} as Record<string, AgentMetadata[]>);
 
   for (const [appName, appAgents] of Object.entries(groupedAgents)) {
-    if (!filterApp) {
+    if (!options?.app) {
       console.log(chalk.cyan(`🏠 ${appName}/`));
     }
 
     for (const agent of appAgents) {
-      const indent = filterApp ? '   ' : '     ';
-      console.log(`${indent}🤖 ${chalk.white(agent.name)} (${chalk.gray(agent.type)})`);
+      const indent = options?.app ? '   ' : '     ';
+      
+      // Icône de statut
+      const statusIcon = {
+        'draft': '📝',
+        'active': '✅', 
+        'inactive': '⏸️'
+      }[agent.status] || '❓';
+      
+      // Couleur du statut
+      const statusColor = {
+        'draft': chalk.yellow,
+        'active': chalk.green,
+        'inactive': chalk.gray
+      }[agent.status] || chalk.white;
+      
+      console.log(`${indent}${statusIcon} ${chalk.white(agent.name)} (${chalk.gray(agent.type)})`);
       console.log(`${indent}   ${chalk.gray(agent.description)}`);
-      console.log(`${indent}   ${chalk.gray(`v${agent.version} • ${agent.author} • ${agent.states.length} states`)}`);
+      console.log(`${indent}   ${statusColor(`Status: ${agent.status}`)} • ${chalk.gray(`v${agent.version} (deploy: v${agent.deployment_version})`)}`);
+      console.log(`${indent}   ${chalk.gray(`States: ${agent.states.join(', ')}`)}`);
+      
+      if (agent.deployed_at) {
+        console.log(`${indent}   ${chalk.gray(`Deployed: ${new Date(agent.deployed_at).toLocaleString()}`)}`);
+      }
       console.log();
     }
   }
 
   console.log(chalk.blue('📋 Next steps:'));
-  console.log(chalk.gray('   directive start                      # Start the server to run agents'));
-  console.log(chalk.gray('   directive create agent               # Create another agent'));
+  console.log(chalk.gray('   directive deploy agent <name>       # Deploy a draft agent'));
+  console.log(chalk.gray('   directive start                     # Start the server to run agents'));
+  console.log(chalk.gray('   directive create agent <name>       # Create another agent'));
+  
+  // Statistiques
+  const stats = {
+    draft: agents.filter(a => a.status === 'draft').length,
+    active: agents.filter(a => a.status === 'active').length,
+    inactive: agents.filter(a => a.status === 'inactive').length
+  };
+  
+  console.log(chalk.blue('\n📊 Summary:'));
+  console.log(chalk.gray(`   Draft: ${stats.draft} • Active: ${stats.active} • Inactive: ${stats.inactive}`));
 } 

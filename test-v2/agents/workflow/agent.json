@@ -1,0 +1,19 @@
+{
+  "id": "agent_test-v2_workflow_mc7qr49d_qyh",
+  "name": "workflow",
+  "type": "test-v2/workflow",
+  "description": "Agent de workflow principal",
+  "author": "Test User",
+  "version": "1.0.0",
+  "project_name": "test-v2",
+  "created_at": "2025-06-22T14:06:36.625Z",
+  "xstate_version": "^5.20.0",
+  "architecture": "directive-v2.0",
+  "structure": "simplified",
+  "states": [
+    "idle",
+    "processing",
+    "success",
+    "error"
+  ]
+}

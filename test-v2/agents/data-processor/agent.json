@@ -1,0 +1,19 @@
+{
+  "id": "agent_test-v2_data-processor_mc7qrqj4_b71",
+  "name": "data-processor",
+  "type": "test-v2/data-processor",
+  "description": "Agent de traitement de données",
+  "author": "Data Team",
+  "version": "1.0.0",
+  "project_name": "test-v2",
+  "created_at": "2025-06-22T14:07:05.488Z",
+  "xstate_version": "^5.20.0",
+  "architecture": "directive-v2.0",
+  "structure": "simplified",
+  "states": [
+    "idle",
+    "processing",
+    "success",
+    "error"
+  ]
+}
