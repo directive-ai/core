@@ -129,32 +129,33 @@ export async function createProjectStructure(projectInfo: ProjectOptions): Promi
 }
 
 /**
- * Génère le package.json du projet utilisateur
+ * Génère le package.json du projet utilisateur (v2.0 - SDK seulement)
  */
 export async function generatePackageJson(projectPath: string, projectInfo: ProjectOptions): Promise<void> {
-  let directiveCoreVersion = '^1.0.0';
+  let directiveSdkVersion = '^1.0.0';
   
-  // Utiliser le tarball local si demandé
+  // Utiliser le tarball local si demandé (pour développement)
   if (projectInfo.local) {
-    const tarballPath = path.resolve(process.cwd(), 'directive-core-1.0.0.tgz');
+    const tarballPath = path.resolve(process.cwd(), '../sdk/directive-sdk-1.0.0.tgz');
     try {
       await fs.access(tarballPath);
-      directiveCoreVersion = tarballPath;
+      directiveSdkVersion = tarballPath;
     } catch {
-      throw new Error(`Local tarball not found: ${tarballPath}\nRun 'npm pack' in the @directive/core directory first.`);
+      console.warn(`Local SDK tarball not found: ${tarballPath}. Using npm version.`);
     }
   }
 
+  // Architecture v2.0 : Projets utilisent SEULEMENT le SDK
+  // Le Core est installé globalement et fournit le CLI + serveur
   const baseDependencies = {
-    "@directive/core": directiveCoreVersion,
+    "@directive/sdk": directiveSdkVersion,   // Types + Webpack + Outils dev
     "typescript": "~5.8.0",
-    "xstate": "^5.20.0",
+    "xstate": "^5.20.0",                     // Runtime pour les machines
     "@types/node": "^24.0.0",
     "jest": "^30.0.0",
-    "@types/jest": "^30.0.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1"
+    "@types/jest": "^30.0.0"
+    // Note: @directive/core est installé globalement
+    // Note: webpack fourni par @directive/sdk
   };
 
   // Ajouter des dépendances spécifiques selon le type de base de données
@@ -182,10 +183,11 @@ export async function generatePackageJson(projectPath: string, projectInfo: Proj
       "build": "webpack --mode production",
       "build:agent": "webpack --mode production --env agent",
       "dev": "webpack --mode development --watch",
-      "start": "directive start",
-      "dev:server": "directive start --watch",
-      "agent:list": "directive agent list",
-      "agent:create": "directive agent create",
+      "start": "directive start",              // CLI global @directive/core
+      "dev:server": "directive start --watch", // CLI global @directive/core
+      "list": "directive list agents",         // CLI global @directive/core
+      "create": "directive create agent",      // CLI global @directive/core
+      "deploy": "directive deploy agent",      // CLI global @directive/core
       "test": "jest"
     },
     devDependencies: {
@@ -233,56 +235,61 @@ export async function generateTsConfig(projectPath: string): Promise<void> {
 }
 
 /**
- * Génère la configuration Webpack avec externalization
+ * Génère la configuration Webpack utilisant @directive/sdk
  */
 export async function generateWebpackConfig(projectPath: string): Promise<void> {
-  const webpackConfig = `const path = require('path');
+  const webpackConfig = `const { createWebpackConfig } = require('@directive/sdk/webpack');
+
+// Configuration Webpack optimisée par @directive/sdk (Architecture v2.0)
+module.exports = (env, argv) => {
+  return createWebpackConfig({
+    mode: argv.mode || 'development',
+    
+    // Entry: si agent spécifique fourni, sinon tous les agents
+    entry: env && env.agent 
+      ? \`./agents/\${env.agent}/agent.ts\`
+      : './agents/**/agent.ts',
+    
+    // Le SDK gère automatiquement :
+    // - Externalisation de XState (fourni par le runtime)
+    // - Types TypeScript depuis @directive/types
+    // - Configuration optimale pour les agents
+    
+    // Personnalisation possible si nécessaire
+    // customize: {
+    //   externals: { /* externals additionnels */ },
+    //   alias: { /* alias additionnels */ }
+    // }
+  });
+};
+
+// Configuration simple alternative (sans SDK)
+// Décommentez si vous voulez une configuration webpack basique
+/*
+const path = require('path');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   const isAgent = env && env.agent;
   
-  const config = {
+  return {
     mode: isProduction ? 'production' : 'development',
-    
-    // Entry: si agent spécifique fourni, sinon tous les agents
-    entry: isAgent 
-      ? \`./agents/\${env.agent}/agent.ts\`
-      : './agents/**/agent.ts',
-    
+    entry: isAgent ? \`./agents/\${env.agent}/agent.ts\` : './agents/*//**/agent.ts',
     externals: {
-      // Externalize dependencies that will be provided by @directive/core
-      'xstate': 'commonjs xstate',
-      '@directive/core': 'commonjs @directive/core'
+      'xstate': 'commonjs xstate'
+      // Note: Plus besoin d'externaliser @directive/core en v2.0
+      // Les agents utilisent seulement @directive/sdk pour les types
     },
-    
     module: {
-      rules: [
-        {
-          test: /\\.ts$/,
-          use: {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: true, // Ignore TypeScript errors
-              compilerOptions: {
-                strict: false,
-                noImplicitAny: false,
-                strictNullChecks: false
-              }
-            }
-          },
-          exclude: /node_modules/,
-        },
-      ],
+      rules: [{
+        test: /\\.ts$/,
+        use: 'ts-loader',
+        exclude: /node_modules/
+      }]
     },
-    
     resolve: {
-      extensions: ['.ts', '.js'],
-      alias: {
-        '@': path.resolve(__dirname, 'agents')
-      }
+      extensions: ['.ts', '.js']
     },
-    
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: isAgent ? \`\${env.agent}.js\` : '[name].js',
@@ -290,18 +297,10 @@ module.exports = (env, argv) => {
       libraryTarget: 'commonjs2',
       clean: true
     },
-    
-    target: 'node',
-    
-    optimization: {
-      minimize: isProduction
-    },
-    
-    devtool: isProduction ? false : 'source-map'
+    target: 'node'
   };
-  
-  return config;
 };
+*/
 `;
 
   await fs.writeFile(

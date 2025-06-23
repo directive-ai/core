@@ -1,5 +1,6 @@
 import { AgentResponse } from './agent-response.dto.js';
 import { SessionStatus } from './session.dto.js';
+import type { AgentMetadata } from '@directive/types';
 
 /**
  * Requête de création de session
@@ -37,16 +38,7 @@ export interface SessionEventResponse {
   message?: string;                       // Message de statut
 }
 
-/**
- * Métadonnées d'un agent directeur
- */
-export interface AgentMetadata {
-  name: string;                           // Nom lisible de l'agent
-  description: string;                    // Description du comportement
-  version: string;                        // Version de l'agent
-  author?: string;                        // Auteur de l'agent
-  created_at?: string;                    // Date de création
-}
+// AgentMetadata maintenant importé depuis @directive/types
 
 /**
  * Informations d'un agent directeur enregistré

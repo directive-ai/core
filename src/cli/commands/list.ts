@@ -3,7 +3,9 @@ import chalk from 'chalk';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { JsonDatabaseService } from '../../implementations/database/json-database.impl.js';
+import type { AgentRegistration, ApplicationRegistration } from '@directive/types';
 
+// Interface pour l'affichage des agents (basée sur AgentRegistration)
 interface AgentMetadata {
   id: string;
   name: string;
@@ -19,6 +21,7 @@ interface AgentMetadata {
   states: string[];
 }
 
+// Interface pour l'affichage des applications (basée sur ApplicationRegistration)
 interface ApplicationCard {
   id: string;
   name: string;

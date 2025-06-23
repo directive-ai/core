@@ -20,10 +20,12 @@ export {
   CreateSessionResponse,
   SessionEvent,
   SessionEventResponse,
-  AgentMetadata,
   RegisteredAgent,
   HealthStatus
 } from './api.dto';
+
+// Types importés depuis @directive/types (réexportés pour compatibilité)
+export type { AgentMetadata } from '@directive/types';
 
 // Agent Types
 export {

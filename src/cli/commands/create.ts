@@ -6,6 +6,7 @@ import { Command } from 'commander';
 
 import { JsonDatabaseService } from '../../implementations/database/json-database.impl.js';
 import type { CreateApplicationRequest } from '../../dto/index.js';
+import type { BaseAgentContext, BaseAgentEvent } from '@directive/types';
 
 interface CreateAppOptions {
   name?: string;
@@ -352,6 +353,7 @@ async function generateAgentTypeScriptV2(agentPath: string, agentInfo: AgentInfo
   const camelCaseName = toCamelCase(agentInfo.name);
 
   const agentTemplate = `import { createMachine, assign } from 'xstate';
+import type { BaseAgentContext, BaseAgentEvent } from '@directive/types';
 
 /**
  * ${agentInfo.description}
@@ -361,20 +363,15 @@ async function generateAgentTypeScriptV2(agentPath: string, agentInfo: AgentInfo
  * Architecture: Directive v2.0 (simplified)
  */
 
-export interface ${pascalCaseName}Context {
-  // Définir les données du contexte ici
-  currentState: string;
-  requestData?: any;
-  result?: any;
-  error?: string;
+export interface ${pascalCaseName}Context extends BaseAgentContext {
+  // Ajouter vos données spécifiques ici
+  // Les champs de base (currentState, requestData, result, error, sessionId, sessionMetadata) 
+  // sont déjà inclus via BaseAgentContext
 }
 
-export type ${pascalCaseName}Event = 
-  | { type: 'START'; data?: any }
-  | { type: 'PROCESS'; payload: any }
-  | { type: 'SUCCESS'; result: any }
-  | { type: 'ERROR'; error: string }
-  | { type: 'RESET' };
+export type ${pascalCaseName}Event = BaseAgentEvent | 
+  // Ajouter vos événements spécifiques ici
+  { type: 'CUSTOM_EVENT'; payload: any };
 
 /**
  * Machine XState pour l'agent ${agentInfo.name}
