@@ -1,11 +1,11 @@
-# analytics
+# test-template
 
-Agent d'analyse de données
+AI directive agent test-template
 
 ## Informations
 
-- **Type**: `test-v2/analytics`
-- **Auteur**: Data Science Team
+- **Type**: `test-v2/test-template`
+- **Auteur**: Test User
 - **Version**: 1.0.0
 - **Architecture**: Directive v2.0 (simplifiée)
 
@@ -16,16 +16,16 @@ Cet agent fait partie du projet **test-v2** et utilise la nouvelle architecture 
 ### Fonctionnalités
 
 - ✅ Machine XState pour la logique métier
-- ✅ Structure simplifiée `agents/analytics/`
+- ✅ Structure simplifiée `agents/test-template/`
 - ✅ Base de données globale `~/.directive/data/`
-- ✅ Type d'agent: `test-v2/analytics`
+- ✅ Type d'agent: `test-v2/test-template`
 
 ## Usage
 
 ### Déploiement
 
 ```bash
-directive deploy agent analytics
+directive deploy agent test-template
 ```
 
 ### Test via API
@@ -37,7 +37,7 @@ directive start
 # Créer une session
 curl -X POST http://localhost:3000/sessions \
   -H "Content-Type: application/json" \
-  -d '{"agent_type": "test-v2/analytics"}'
+  -d '{"agent_type": "test-v2/test-template"}'
 
 # Lister les agents
 curl http://localhost:3000/agents
@@ -48,7 +48,7 @@ curl http://localhost:3000/agents
 ```
 test-v2/
 ├── agents/
-│   └── analytics/
+│   └── test-template/
 │       ├── agent.ts          # Machine XState
 │       ├── agent.json        # Métadonnées
 │       └── desc.mdx          # Cette documentation
@@ -63,7 +63,7 @@ test-v2/
 Éditez le fichier `agent.ts` pour personnaliser la machine XState :
 
 ```typescript
-export const analyticsMachine = createMachine({
+export const testTemplateMachine = createMachine({
   // Votre logique ici
 });
 ```
@@ -86,4 +86,4 @@ Cette version utilise la nouvelle architecture Directive v2.0 :
 
 ---
 
-Créé avec Directive v2.0 le 22/06/2025
+Créé avec Directive v2.0 le 23/06/2025

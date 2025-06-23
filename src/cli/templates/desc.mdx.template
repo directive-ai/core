@@ -1,31 +1,31 @@
-# data-processor
+# {{agentName}}
 
-Agent de traitement de données
+{{description}}
 
 ## Informations
 
-- **Type**: `test-v2/data-processor`
-- **Auteur**: Data Team
+- **Type**: `{{agentType}}`
+- **Auteur**: {{author}}
 - **Version**: 1.0.0
 - **Architecture**: Directive v2.0 (simplifiée)
 
 ## Description
 
-Cet agent fait partie du projet **test-v2** et utilise la nouvelle architecture Directive v2.0 avec une structure simplifiée.
+Cet agent fait partie du projet **{{projectName}}** et utilise la nouvelle architecture Directive v2.0 avec une structure simplifiée.
 
 ### Fonctionnalités
 
 - ✅ Machine XState pour la logique métier
-- ✅ Structure simplifiée `agents/data-processor/`
+- ✅ Structure simplifiée `agents/{{agentName}}/`
 - ✅ Base de données globale `~/.directive/data/`
-- ✅ Type d'agent: `test-v2/data-processor`
+- ✅ Type d'agent: `{{agentType}}`
 
 ## Usage
 
 ### Déploiement
 
 ```bash
-directive deploy agent data-processor
+directive deploy agent {{agentName}}
 ```
 
 ### Test via API
@@ -37,7 +37,7 @@ directive start
 # Créer une session
 curl -X POST http://localhost:3000/sessions \
   -H "Content-Type: application/json" \
-  -d '{"agent_type": "test-v2/data-processor"}'
+  -d '{"agent_type": "{{agentType}}"}'
 
 # Lister les agents
 curl http://localhost:3000/agents
@@ -46,9 +46,9 @@ curl http://localhost:3000/agents
 ## Structure du Projet
 
 ```
-test-v2/
+{{projectName}}/
 ├── agents/
-│   └── data-processor/
+│   └── {{agentName}}/
 │       ├── agent.ts          # Machine XState
 │       ├── agent.json        # Métadonnées
 │       └── desc.mdx          # Cette documentation
@@ -63,7 +63,7 @@ test-v2/
 Éditez le fichier `agent.ts` pour personnaliser la machine XState :
 
 ```typescript
-export const dataProcessorMachine = createMachine({
+export const {{camelCaseName}}Machine = createMachine({
   // Votre logique ici
 });
 ```
@@ -86,4 +86,4 @@ Cette version utilise la nouvelle architecture Directive v2.0 :
 
 ---
 
-Créé avec Directive v2.0 le 22/06/2025
+Créé avec Directive v2.0 le {{createdDateFr}} 

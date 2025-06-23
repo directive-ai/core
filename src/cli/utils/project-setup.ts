@@ -148,14 +148,16 @@ export async function generatePackageJson(projectPath: string, projectInfo: Proj
   // Architecture v2.0 : Projets utilisent SEULEMENT le SDK
   // Le Core est installé globalement et fournit le CLI + serveur
   const baseDependencies = {
-    "@directive/sdk": directiveSdkVersion,   // Types + Webpack + Outils dev
+    "@directive/sdk": directiveSdkVersion,   // Types + Config Webpack + Outils dev
     "typescript": "~5.8.0",
     "xstate": "^5.20.0",                     // Runtime pour les machines
     "@types/node": "^24.0.0",
     "jest": "^30.0.0",
-    "@types/jest": "^30.0.0"
+    "@types/jest": "^30.0.0",
+    "webpack": "^5.89.0",                    // Webpack pour compilation locale
+    "webpack-cli": "^5.1.4",                // CLI webpack pour npm scripts
+    "ts-loader": "^9.5.1"                   // TypeScript loader pour webpack
     // Note: @directive/core est installé globalement
-    // Note: webpack fourni par @directive/sdk
   };
 
   // Ajouter des dépendances spécifiques selon le type de base de données
@@ -212,7 +214,7 @@ export async function generateTsConfig(projectPath: string): Promise<void> {
     compilerOptions: {
       target: "ES2020",
       module: "ESNext",
-      moduleResolution: "node",
+      moduleResolution: "bundler",
       esModuleInterop: true,
       allowSyntheticDefaultImports: true,
       strict: false,
@@ -238,34 +240,7 @@ export async function generateTsConfig(projectPath: string): Promise<void> {
  * Génère la configuration Webpack utilisant @directive/sdk
  */
 export async function generateWebpackConfig(projectPath: string): Promise<void> {
-  const webpackConfig = `const { createWebpackConfig } = require('@directive/sdk/webpack');
-
-// Configuration Webpack optimisée par @directive/sdk (Architecture v2.0)
-module.exports = (env, argv) => {
-  return createWebpackConfig({
-    mode: argv.mode || 'development',
-    
-    // Entry: si agent spécifique fourni, sinon tous les agents
-    entry: env && env.agent 
-      ? \`./agents/\${env.agent}/agent.ts\`
-      : './agents/**/agent.ts',
-    
-    // Le SDK gère automatiquement :
-    // - Externalisation de XState (fourni par le runtime)
-    // - Types TypeScript depuis @directive/types
-    // - Configuration optimale pour les agents
-    
-    // Personnalisation possible si nécessaire
-    // customize: {
-    //   externals: { /* externals additionnels */ },
-    //   alias: { /* alias additionnels */ }
-    // }
-  });
-};
-
-// Configuration simple alternative (sans SDK)
-// Décommentez si vous voulez une configuration webpack basique
-/*
+  const webpackConfig = `// Configuration Webpack simple et autonome (Architecture v2.0)
 const path = require('path');
 
 module.exports = (env, argv) => {
@@ -274,7 +249,7 @@ module.exports = (env, argv) => {
   
   return {
     mode: isProduction ? 'production' : 'development',
-    entry: isAgent ? \`./agents/\${env.agent}/agent.ts\` : './agents/*//**/agent.ts',
+    entry: isAgent ? \`./agents/\${env.agent}/agent.ts\` : './agents/**/agent.ts',
     externals: {
       'xstate': 'commonjs xstate'
       // Note: Plus besoin d'externaliser @directive/core en v2.0
@@ -300,7 +275,6 @@ module.exports = (env, argv) => {
     target: 'node'
   };
 };
-*/
 `;
 
   await fs.writeFile(

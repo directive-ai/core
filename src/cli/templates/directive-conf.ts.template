@@ -1,0 +1,31 @@
+import type { DirectiveConfig } from '@directive/core';
+
+/**
+ * Configuration Directive pour l'application {{projectName}}
+ * 
+ * Version: 2.0 (Architecture simplifiée)
+ * - Plus de sous-applications : 1 projet = 1 application
+ * - Structure simplifiée : agents/{agent}/ (plus agents/{app}/{agent}/)
+ * - Base de données globale : ~/.directive/data/
+ * - Configuration globale : ~/.directive/config.json
+ */
+const config: DirectiveConfig = {
+  // === MÉTADONNÉES APPLICATION ===
+  name: '{{projectName}}',
+  description: '{{projectDescription}}',
+  author: '{{projectAuthor}}',
+  version: '1.0.0',
+
+  // === ARCHITECTURE V2.0 ===
+  architecture: 'v2.0',
+  
+  // Configuration locale uniquement pour métadonnées
+  // (La base de données et serveur sont configurés globalement)
+  metadata: {
+    category: 'user-project',
+    tags: ['directive-v2.0', 'simplified'],
+    created_at: '{{createdAt}}'
+  }
+};
+
+export default config; 

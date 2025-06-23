@@ -1,0 +1,19 @@
+{
+  "id": "{{agentId}}",
+  "name": "{{agentName}}",
+  "type": "{{agentType}}",
+  "description": "{{description}}",
+  "author": "{{author}}",
+  "version": "1.0.0",
+  "project_name": "{{projectName}}",
+  "created_at": "{{createdAt}}",
+  "xstate_version": "^5.20.0",
+  "architecture": "directive-v2.0",
+  "structure": "simplified",
+  "states": [
+    "idle",
+    "processing", 
+    "success",
+    "error"
+  ]
+} 
