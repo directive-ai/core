@@ -349,7 +349,9 @@ async function createAgentStructureV2(agentInfo: AgentInfoV2): Promise<void> {
  * Charge un template et remplace les placeholders
  */
 async function loadAndRenderTemplate(templateName: string, variables: Record<string, string>): Promise<string> {
-  const templatePath = path.join(__dirname, '../templates', templateName);
+  // Utiliser import.meta.url pour obtenir le chemin du fichier actuel (modules ES6)
+  const currentDir = path.dirname(new URL(import.meta.url).pathname);
+  const templatePath = path.join(currentDir, '../templates', templateName);
   let template = await fs.readFile(templatePath, 'utf-8');
   
   // Remplacer tous les placeholders {{variable}} par leurs valeurs

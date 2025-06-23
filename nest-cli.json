@@ -5,7 +5,13 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "builder": "tsc",
-    "typeCheck": true
+    "typeCheck": true,
+    "assets": [
+      {
+        "include": "cli/templates/**/*",
+        "outDir": "dist"
+      }
+    ]
   },
   "projects": {
     "core": {
