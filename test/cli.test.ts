@@ -92,8 +92,8 @@ describe('CLI Tests', () => {
       }
 
       // Vérifier que l'aide contient les éléments essentiels
-      expect(output).toContain('CLI pour Directive');
-      expect(output).toContain('Orchestrateur d\'agents IA');
+      expect(output).toContain('CLI for Directive');
+      expect(output).toContain('AI Agents Orchestrator');
       expect(output).toContain('--version');
       expect(output).toContain('--help');
     });
