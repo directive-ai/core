@@ -2,27 +2,27 @@
 
 {{description}}
 
-## Informations
+## Information
 
 - **Type**: `{{agentType}}`
-- **Auteur**: {{author}}
+- **Author**: {{author}}
 - **Version**: 1.0.0
-- **Architecture**: Directive v2.0 (simplifiée)
+- **Architecture**: Directive v2.0 (simplified)
 
 ## Description
 
-Cet agent fait partie du projet **{{projectName}}** et utilise la nouvelle architecture Directive v2.0 avec une structure simplifiée.
+This agent is part of the **{{projectName}}** project and uses the new Directive v2.0 architecture with simplified structure.
 
-### Fonctionnalités
+### Features
 
-- ✅ Machine XState pour la logique métier
-- ✅ Structure simplifiée `agents/{{agentName}}/`
-- ✅ Base de données globale `~/.directive/data/`
-- ✅ Type d'agent: `{{agentType}}`
+- ✅ XState machine for business logic
+- ✅ Simplified structure `agents/{{agentName}}/`
+- ✅ Global database `~/.directive/data/`
+- ✅ Agent type: `{{agentType}}`
 
 ## Usage
 
-### Déploiement
+### Deployment
 
 ```bash
 directive deploy agent {{agentName}}
@@ -31,59 +31,59 @@ directive deploy agent {{agentName}}
 ### Test via API
 
 ```bash
-# Démarrer le serveur
+# Start the server
 directive start
 
-# Créer une session
+# Create a session
 curl -X POST http://localhost:3000/sessions \
   -H "Content-Type: application/json" \
   -d '{"agent_type": "{{agentType}}"}'
 
-# Lister les agents
+# List agents
 curl http://localhost:3000/agents
 ```
 
-## Structure du Projet
+## Project Structure
 
 ```
 {{projectName}}/
 ├── agents/
 │   └── {{agentName}}/
-│       ├── agent.ts          # Machine XState
-│       ├── agent.json        # Métadonnées
-│       └── desc.mdx          # Cette documentation
-├── directive-conf.ts         # Configuration application
-└── package.json              # Dépendances
+│       ├── agent.ts          # XState machine
+│       ├── agent.json        # Metadata
+│       └── desc.mdx          # This documentation
+├── directive-conf.ts         # Application configuration
+└── package.json              # Dependencies
 ```
 
-## Développement
+## Development
 
-### Modifier la logique
+### Modify Logic
 
-Éditez le fichier `agent.ts` pour personnaliser la machine XState :
+Edit the `agent.ts` file to customize the XState machine:
 
 ```typescript
 export const {{camelCaseName}}Machine = createMachine({
-  // Votre logique ici
+  // Your logic here
 });
 ```
 
-### États disponibles
+### Available States
 
-- **idle**: État initial, en attente
-- **processing**: Traitement en cours  
-- **success**: Traitement réussi
-- **error**: Erreur rencontrée
+- **idle**: Initial state, waiting
+- **processing**: Processing in progress  
+- **success**: Processing successful
+- **error**: Error encountered
 
 ## Architecture v2.0
 
-Cette version utilise la nouvelle architecture Directive v2.0 :
+This version uses the new Directive v2.0 architecture:
 
-- 🌍 **Configuration globale**: `~/.directive/config.json`
-- 🗄️ **Base de données globale**: `~/.directive/data/`
-- 📁 **Structure simplifiée**: Plus de sous-applications
-- 🔗 **Mapping automatique**: Projet = Application
+- 🌍 **Global configuration**: `~/.directive/config.json`
+- 🗄️ **Global database**: `~/.directive/data/`
+- 📁 **Simplified structure**: No more sub-applications
+- 🔗 **Automatic mapping**: Project = Application
 
 ---
 
-Créé avec Directive v2.0 le {{createdDateFr}} 
+Created with Directive v2.0 on {{createdDateFr}} 

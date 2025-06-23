@@ -10,30 +10,29 @@ import type { BaseAgentContext, BaseAgentEvent } from '@directive/sdk/types';
  */
 
 export interface {{PascalCaseName}}Context extends BaseAgentContext {
-  // Ajouter vos données spécifiques ici
-  // Les champs de base (currentState, requestData, result, error, sessionId, sessionMetadata) 
-  // sont déjà inclus via BaseAgentContext
+  // Add your specific data here
+  // Base fields (currentState, requestData, result, error, sessionId, sessionMetadata) 
+  // are already included via BaseAgentContext
 }
 
 export type {{PascalCaseName}}Event = BaseAgentEvent | 
-  // Ajouter vos événements spécifiques ici
+  // Add your specific events here
   { type: 'CUSTOM_EVENT'; payload: any };
 
 /**
- * Machine XState pour l'agent {{agentName}}
+ * XState machine for agent {{agentName}}
  * 
- * États disponibles:
- * - idle: État initial, en attente
- * - processing: Traitement en cours
- * - success: Traitement réussi
- * - error: Erreur rencontrée
+ * Available states:
+ * - idle: Initial state, waiting
+ * - processing: Processing in progress
+ * - success: Processing successful
+ * - error: Error encountered
  */
 export const {{camelCaseName}}Machine = createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAoC2BDAxgCwJYDswBKAOjxAGIBlAFQFEBhAUQGUBRAeQFVYkBiAOgCyAoQGViAIQBS8+QIBKJANoAGALqJQqCAJa58isJP0gAHogC0AJgBsARgCcAVgAMZ1wBZDd7wAci8AXxCFXEceBhZ2LmFeAkIyGjoGJiTOHn4QQWFhEQlpOTKKxWUDKgMvP0M-A1MAKxdbKONbPxcAaUtBj3CHT1c3cP8rHytW0YEBNgSkpJp6Rk4eFO5uPiERMXLhKXTqqlVa8u0nMz8faz8HJx8vQyDg0ITwp0jGlraPbqfn3rdGx9exAkCGCBAsGQ6CsHCwBHBtjgdkwWD8qgC6gJZAAjjYzGZGrYWk1Dm5Dk9dv1nsZBkZZiMwaZnjNZv9nl8fnNbKsApD3KZ9ijSjCqUROPUEa0NNomTYEVjiWwScZKq5nN1GgYJpzvBMGQCjlYfLLrL89mdJdtBnzWXcYU9XuCnlNpd4HS52Z8ddz8fy3ALhULhWBGiR4xVRMSyHjyGSKVSaXSGQZJsyFr5XLZ-NZnMa-PsRZMpTa5ZGlc8XirjQ6A7rbU7XaI+M0Yx1msS8f74lT7nj8VGJpyJp6LQWJtnBXCfq5-K4q2sllY3B4c-nc75vfmi6WfOWViZFqYZbOG03W9M2+2Ox3uyje0I+wONc2BxxGsP8cHyDSJQmPg5h+JYowrGsNinj4+xhMsuwnLYiwrDkJ6rAWzxfB8bzbO8S7XCWqw3jeG6FtuC6fpe16oTeZSvuSZBJPSzSZK0tKfogJ5sE+F4AjehJnhcCyxH4QxhLsvhBJyYReLcdh7FsWqaG8JxaPshiAp+CYhkkrjfr+aJJDBcGgYhyGobOgwAbsO6PLWp7FtRz4tK+fhnjJ8n+MsCw+JJQHXNcdh+CYJqnKcZgdNONZQfOCyOWsJYrGsECQAAZJAzQuAONDOW0CDQrJ8EIUhKFoRhWHvjhawzjJjzQlZ0GkVcmW7F+xZwrEZx5a5sGFaFhLXPOAUbJYo2vhCUrNvNQWRQQC0VL4k2rDNa2dSBe14kJtxAj4Rxns1bWdcVxY3H4Ix+Cscq+C4Fq7Oqk2jXheyIWFRAnSdF26YRu6qbxBmEtCJoWsaPqJk5e7UStgJbAYG1nLsYQbVWQKCl+tZHfdKFfVt+07rqJzfmcZ3xBdqNtcDanGidpEqZcqOXOcez-FsONY0xPXo39gOTvY8OIbsqN-M6FxHCCKMQ1FQRbLCTojKzLhc5eNNPBzNNE6xBLnAGGWxJ+n7nF+BYAkD8PC8bkvxHz8tOkrE5e5cjZ7MdeOdqNLl7AjesFYVLu+pYTzPV5QV+S5AU3dcDrCQYXhTaTxmrdTANS9T2fU9cFnNr4fGOy6KKBGcFynEqQxj+NG5TwzRfXXbAcOjXGOcUz+hHfrPF6zxtEBbaZfOg+uPG8XwddKHjzOu6ZfvXaL97iNzYA8LI8y3ErbNZNOZoQDr8s+A64xxoGaZoT9HnHznMST9PRBp9Pd8+wHiN5EFdLHcYFEhOVKGAEQb5TQNmgXYCCzBVRiHFaKJNRbYn3EsXyPgTYOEGJcUKLk6hj0iE1DqzUJrpE7FcfW4DYbwIXkLdaOFJC4NgXvLBECcF0LwQQjIhNJBGySsHGOplDJJweKw7mHNUYywnJOUsJwdgWJXGYMsXUOELXiMlVKN0uy+DQSDLygtTieJUZBNOAJLj7yvtYYILjxYWJcZYvWzhbG2KEZbdxDj8auOGKY4IQQzENmsW4yJXiXJjx8bqRE8QzA7w6p4EuqxEn5gKBOJccQ6pyzfnE5J8i3EN0jiELxu5kgAWPgXLWXhNLBKvIWQZhYJwP27LZEaF8yzd3sdPJJxSMkzzeN4MpFTKnVNqfUxpzTfgzhvG3OJOp4kj0SbcfMSSJJ2TQi4OsE5AjdCmr+TpOw2ku06RY2JGzRHbPKbEyJdtqZmXJrNWyFJnmbI1NsbJZl3JdXeJ8zWjx-iWynFOHaRVQh9h+dkxJdyMllOJZUspsLNkPHrP0gZJlWlBysQZWJxkApTPAfBYFUKBnpMNoHVJUcJ6JwbHEO6N1gVkshWcsF8KiVgoyQWI5fkdggsmWCzIWxwj7L2Mc05qLdkXPOY7XZKkEi7LafsJyhzbZlJdscJaxxgw2O+vqhOiV5F7DjhcCiLzPk-MyQCyJjzMXPOxfOXFsxPbFhggsaIOprWGPrnrJJdLqX0snnM1yhKumIvySSuOjy+nJwKHYZO4xSJeKfBCBsUKW60rZeS-JLLe7XJJYfMl-iy3LwPl8wFE5Y2AiLPsOpG4Vjrg3D8e+axM0Fq+c25tj4K4TnqWiutHzZXDMGCMyMfTPlVJFU3MFQLQU3ynAFCZCxEgJwHlCJsZ0N01oBmO7IPbU2coTr3d5HaJq+u6sxDBaEzQOFSVJNYqwz02vBbOv5ALp3QoWV84FnS5WPsWUqsVYzxxJuOaFKt4TjFOvBR63F-TsXXvBQ+z4-bCyasmBYztqGEgnH+scL58Rbjrh2t4Q5ow6xnAMz1-6gMzuXWBy936UOVJ+W6i2iwZqdGrOOvpAQO01Q8Gu0iZoez+DiCvPcHCINGJlbK3Vs75WKtNlRYdK8-3OI+n3C1v86wJBdFO3t8KAaUaAzR1WjxVgDBdbxU5HNbHUYqcfGjl96Ohzo63J1fqlPzsJe66mjyPE1CrBW-Ys4VhOTJWGwFEKe29odcOrtPaojepM+F1M17o20YQ5cYqfHkgPFMxK1zG8YGEYs-+qzQHu18Wvfx-D8cO46jUwxLz2TJyJOHfXfcJwr7nyCEwgd7nUPCeMyJ7zZTjsrJQtYwsYRqyLqS4upzNWx3uamwwhlYb6P4oNb0-zGbnO8dCHOuTDHpOwvlKsQ59Qlzz3iF5LsTnL4vtfWFmLcWL5xfOXK9NhXKz8btk9HhGWFiLqWmO3zbm+t9cjKC9AjnVzJGWnYcIh3v6FgHvONdFDgMLDYWJqr8Hv0gbpqRtzxGAteeCfJmDUGYOpqI1e5tDbcmQb7fF4+Znu19Y4z2uzw2A1DazVWlNgaJ1gkOCWKlm7qv3cYyl-bV3B05bJZkz0HCVzBJ-W-cdeqoWqegxq8Hk9y3T0TiNi7SWMdQf-TDqbImBPjemyR7IhZnAVhHkDnr0P8sw5o8J+H-3MsPL67JnQBY+gfFMlOBcjOJ10fZ6OgtQ4Cz7iJ4xNHNH7t-bKULkXyXHvi+SG9gbuvNw-GnMFKqNTLy3e2rZpk78uo3Dq5RmHO2TJ10-0SdBXGOWxkFvkY+RFOPeZ4XfJurD3fuL-XnE9+4bD7xGxIbL46Oqd3vLjH3fJbfK7KLHCL3LPDYBh7YfZFkDHJF5Nq4GJJcFTqFJFqD4H9C4Oq1sH+b+qO-oKDmZ9JFpNhFhFh9j5JA5JWKhJT1LNhD9Qbh7YfAAXZLkHqZyYjj3VyOYJ5Z8FdpjA9gFx+MYdWPKqME5fJ-D4FHf9HNP-T5A9AvQ-SFFxJUNYUoQBApE3YcA8OJ-YI2hZZ04PZi5pIRh1gPCPD9l4JAA */
   id: '{{agentName}}',
   initial: 'idle',
   
-  // Contexte initial basé sur BaseAgentContext
+  // Initial context based on BaseAgentContext
   context: ({
     currentState: 'idle',
     requestData: null,
@@ -58,7 +57,7 @@ export const {{camelCaseName}}Machine = createMachine({
 
     processing: {
       invoke: {
-        // Simuler un traitement async
+        // Simulate async processing
         src: 'process{{PascalCaseName}}',
         onDone: {
           target: 'success',
