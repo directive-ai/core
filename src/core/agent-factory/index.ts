@@ -2,7 +2,7 @@ export {
   AgentDirecteurFactory,
   AgentMachineDefinition,
   AgentMachineInstance
-} from './agent-directeur-factory';
+} from './agent-factory';
 
 export {
   getCurrentGitCommitId,

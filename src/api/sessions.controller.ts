@@ -20,7 +20,7 @@ import {
   Session 
 } from '../dto/index.js';
 import { BundleStorageService } from '../implementations/storage/bundle-storage.service.js';
-import { AgentDirecteurFactory, AgentMachineInstance } from '../core/agent-factory/agent-directeur-factory.js';
+import { AgentDirecteurFactory, AgentMachineInstance } from '../core/agent-factory/agent-factory.js';
 
 /**
  * Controller pour la gestion des sessions d'agents
