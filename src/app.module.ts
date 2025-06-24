@@ -10,7 +10,8 @@ import { DeploymentController } from './api/deployment.controller.js';
 // Services et Middleware
 import { AuthMiddleware } from './api/auth.middleware.js';
 import { MockIAMService } from './implementations/iam/mock-iam.impl.js';
-import { IIAMService } from './interfaces/index.js';
+import { JsonDatabaseService } from './implementations/database/json-database.impl.js';
+import { IIAMService, IDatabaseService } from './interfaces/index.js';
 
 @Module({
   imports: [],
@@ -26,6 +27,14 @@ import { IIAMService } from './interfaces/index.js';
     {
       provide: 'IIAMService',
       useClass: MockIAMService
+    },
+    {
+      provide: 'IDatabaseService',
+      useFactory: () => {
+        const dbService = new JsonDatabaseService('./data');
+        dbService.initialize(); // Initialiser la base de données
+        return dbService;
+      }
     }
   ],
 })
@@ -33,6 +42,11 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
-      .forRoutes('*'); // Appliquer à toutes les routes (middleware gère les routes publiques)
+      .exclude(
+        '/api/auth/login',
+        '/api/health', 
+        '/api/info'
+      )
+      .forRoutes('*'); // Appliquer à toutes les routes sauf les exclusions
   }
 } 

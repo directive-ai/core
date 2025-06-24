@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Param, Req, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import type { Request } from 'express';
-import { IIAMService } from '../interfaces/index.js';
+import { IIAMService, IDatabaseService } from '../interfaces/index.js';
 import { ApiResponse, Application, CreateApplicationRequest } from '../dto/index.js';
 
 /**
@@ -8,7 +8,10 @@ import { ApiResponse, Application, CreateApplicationRequest } from '../dto/index
  */
 @Controller('api/applications')
 export class ApplicationsController {
-  constructor(@Inject('IIAMService') private readonly iamService: IIAMService) {}
+  constructor(
+    @Inject('IIAMService') private readonly iamService: IIAMService,
+    @Inject('IDatabaseService') private readonly databaseService: IDatabaseService
+  ) {}
 
   @Get()
   async getApplications(@Req() req: Request): Promise<ApiResponse<Application[]>> {
@@ -18,31 +21,8 @@ export class ApplicationsController {
         throw new HttpException('Insufficient permissions', HttpStatus.FORBIDDEN);
       }
 
-      // Pour cette implémentation mock, retourner des applications de test
-      const applications: Application[] = [
-        {
-          id: 'app_1',
-          name: 'Test Application 1',
-          description: 'Application de test créée par l\'administrateur',
-          author: 'admin',
-          version: '1.0.0',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          agents_count: 0,
-          metadata: { category: 'test' }
-        },
-        {
-          id: 'app_2', 
-          name: 'Dev Application',
-          description: 'Application de développement',
-          author: req.user!.userId,
-          version: '1.0.0',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          agents_count: 0,
-          metadata: { category: 'dev' }
-        }
-      ];
+      // Récupérer les applications depuis la base de données
+      const applications = await this.databaseService.getApplications();
 
       // Filtrer selon les permissions (admin voit tout, autres voient leurs apps)
       const userPermissions = await this.iamService.getUserPermissions(req.user!.userId);
@@ -78,18 +58,14 @@ export class ApplicationsController {
         throw new HttpException('Application name is required', HttpStatus.BAD_REQUEST);
       }
 
-      // Créer l'application (mock)
-      const application: Application = {
-        id: `app_${Date.now()}`,
+      // Créer l'application dans la base de données
+      const applicationData = {
+        ...data,
         name: data.name.trim(),
-        description: data.description || '',
-        author: req.user!.userId,
-        version: '1.0.0',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        agents_count: 0,
-        metadata: {}
+        author: req.user!.userId
       };
+
+      const application = await this.databaseService.createApplication(applicationData);
       
       return {
         success: true,

@@ -21,7 +21,10 @@ export class AuthMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
     // Skip auth pour certaines routes publiques
+    console.log(`[AuthMiddleware] Path: ${req.path}, Method: ${req.method}`);
+    
     if (this.isPublicRoute(req.path)) {
+      console.log(`[AuthMiddleware] Public route detected: ${req.path}`);
       return next();
     }
 

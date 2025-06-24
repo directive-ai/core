@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, Req, HttpException, HttpStatus, Inject } from '@nestjs/common';
 import type { Request } from 'express';
-import { IIAMService } from '../interfaces/index.js';
+import { IIAMService, IDatabaseService } from '../interfaces/index.js';
 import { ApiResponse, CLIDeployAgentRequest } from '../dto/index.js';
 
 /**
@@ -33,7 +33,10 @@ interface Agent {
  */
 @Controller('api/agents')
 export class AgentsController {
-  constructor(@Inject('IIAMService') private readonly iamService: IIAMService) {}
+  constructor(
+    @Inject('IIAMService') private readonly iamService: IIAMService,
+    @Inject('IDatabaseService') private readonly databaseService: IDatabaseService
+  ) {}
 
   @Get()
   async getAgents(
@@ -46,30 +49,21 @@ export class AgentsController {
         throw new HttpException('Insufficient permissions', HttpStatus.FORBIDDEN);
       }
 
-      // Mock d'agents de test
-      let agents: Agent[] = [
-        {
-          id: 'agent_1',
-          name: 'Test Agent 1',
-          type: 'conversational',
-          applicationId: 'app_1',
-          status: 'deployed',
-          author: 'admin',
-          created_at: new Date().toISOString(),
-          lastDeployedAt: new Date().toISOString(),
-          description: 'Agent de test pour les conversations'
-        },
-        {
-          id: 'agent_2',
-          name: 'Dev Agent',
-          type: 'task',
-          applicationId: 'app_2',
-          status: 'created',
-          author: req.user!.userId,
-          created_at: new Date().toISOString(),
-          description: 'Agent de développement'
-        }
-      ];
+      // Récupérer les agents depuis la base de données
+      const dbAgents = await this.databaseService.getRegisteredAgents({ application_id: applicationId });
+      
+      // Convertir au format Agent compatible CLI
+      let agents: Agent[] = dbAgents.map(dbAgent => ({
+        id: dbAgent.id,
+        name: dbAgent.name,
+        type: dbAgent.type,
+        applicationId: dbAgent.application_id,
+        status: dbAgent.status === 'active' ? 'deployed' : 'created',
+        author: dbAgent.metadata?.author || 'unknown',
+        created_at: dbAgent.created_at,
+        lastDeployedAt: dbAgent.deployed_at,
+        description: dbAgent.description
+      }));
 
       // Filtrer par application si spécifié
       if (applicationId) {
@@ -114,16 +108,26 @@ export class AgentsController {
         throw new HttpException('Application ID is required', HttpStatus.BAD_REQUEST);
       }
 
-      // Créer l'agent (mock)
-      const agent: Agent = {
-        id: `agent_${Date.now()}`,
+      // Créer l'agent dans la base de données
+      const dbAgent = await this.databaseService.createAgent({
+        type: data.type,
+        application_id: data.applicationId,
         name: data.name.trim(),
-        type: data.type || 'default',
-        applicationId: data.applicationId,
+        description: data.description || '',
+        version: '1.0.0',
+        author: req.user!.userId
+      });
+      
+      // Convertir au format Agent compatible CLI
+      const agent: Agent = {
+        id: dbAgent.id,
+        name: dbAgent.name,
+        type: dbAgent.type,
+        applicationId: dbAgent.application_id,
         status: 'created',
         author: req.user!.userId,
-        created_at: new Date().toISOString(),
-        description: data.description
+        created_at: dbAgent.created_at,
+        description: dbAgent.description
       };
       
       return {
