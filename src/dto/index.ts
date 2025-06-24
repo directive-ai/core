@@ -48,4 +48,13 @@ export {
 export {
   UserContext,
   SessionAuthContext
-} from './iam.dto'; 
+} from './iam.dto';
+
+// Auth Types (CLI)
+export {
+  LoginCredentials,
+  LoginResult,
+  ApiResponse,
+  ServerInfo,
+  DeployAgentRequest as CLIDeployAgentRequest
+} from './auth.dto'; 

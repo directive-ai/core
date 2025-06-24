@@ -1,4 +1,4 @@
-import { UserContext, SessionAuthContext } from '@/dto/index.js';
+import { UserContext, SessionAuthContext, LoginCredentials, LoginResult } from '@/dto/index.js';
 
 /**
  * Interface pour les services d'authentification et autorisation (IAM)
@@ -115,4 +115,86 @@ export interface IIAMService {
     activeSessions: number;
     authMethod: string;
   }>;
+
+  // ==========================================
+  // NOUVELLES MÉTHODES POUR LA CLI
+  // ==========================================
+
+  /**
+   * Authentifie un utilisateur avec différents providers
+   * @param credentials Identifiants de connexion
+   * @returns Résultat de l'authentification avec token
+   */
+  login(credentials: LoginCredentials): Promise<LoginResult>;
+
+  /**
+   * Valide un token et retourne le contexte utilisateur
+   * @param token Token d'authentification
+   * @returns Contexte utilisateur ou null si token invalide
+   */
+  validateToken(token: string): Promise<UserContext | null>;
+
+  /**
+   * Renouvelle un token d'authentification
+   * @param token Token actuel
+   * @returns Nouveau token
+   */
+  refreshToken(token: string): Promise<string>;
+
+  /**
+   * Révoque un token d'authentification
+   * @param token Token à révoquer
+   */
+  revokeToken(token: string): Promise<void>;
+
+  // ==========================================
+  // PERMISSIONS GRANULAIRES POUR RESSOURCES
+  // ==========================================
+
+  /**
+   * Vérifie si un utilisateur peut créer des applications
+   * @param userId Identifiant de l'utilisateur
+   * @returns true si l'utilisateur est autorisé
+   */
+  canCreateApplication(userId: string): Promise<boolean>;
+
+  /**
+   * Vérifie si un utilisateur peut supprimer une application
+   * @param userId Identifiant de l'utilisateur
+   * @param appId Identifiant de l'application
+   * @returns true si l'utilisateur est autorisé
+   */
+  canDeleteApplication(userId: string, appId: string): Promise<boolean>;
+
+  /**
+   * Vérifie si un utilisateur peut créer des agents dans une app
+   * @param userId Identifiant de l'utilisateur
+   * @param appId Identifiant de l'application
+   * @returns true si l'utilisateur est autorisé
+   */
+  canCreateAgent(userId: string, appId: string): Promise<boolean>;
+
+  /**
+   * Vérifie si un utilisateur peut supprimer un agent
+   * @param userId Identifiant de l'utilisateur
+   * @param agentId Identifiant de l'agent
+   * @returns true si l'utilisateur est autorisé
+   */
+  canDeleteAgent(userId: string, agentId: string): Promise<boolean>;
+
+  /**
+   * Vérifie si un utilisateur peut déployer un agent
+   * @param userId Identifiant de l'utilisateur
+   * @param agentId Identifiant de l'agent
+   * @returns true si l'utilisateur est autorisé
+   */
+  canDeployAgent(userId: string, agentId: string): Promise<boolean>;
+
+  /**
+   * Vérifie si un utilisateur peut lister les ressources
+   * @param userId Identifiant de l'utilisateur
+   * @param resourceType Type de ressource
+   * @returns true si l'utilisateur est autorisé
+   */
+  canListResources(userId: string, resourceType: 'applications' | 'agents'): Promise<boolean>;
 } 
