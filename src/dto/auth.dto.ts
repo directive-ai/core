@@ -47,4 +47,63 @@ export interface CreateAgentRequest {
 export interface DeployAgentRequest {
   agentId: string;
   force?: boolean;
+}
+
+// ============================================================================
+// NOUVEAUX DTOs - PHASE 3.1 (Migration CLI/API REST)
+// ============================================================================
+
+/**
+ * Configuration globale Directive (CLI + serveur)
+ */
+export interface GlobalConfig {
+  version: string;
+  preferences: {
+    defaultAuthor: string;
+    defaultDatabase: string;
+  };
+  server: {
+    url: string;
+    environment: 'local' | 'production';
+  };
+  cli: {
+    version: string;
+    lastUpdate: string;
+  };
+}
+
+/**
+ * Requête d'initialisation globale
+ */
+export interface InitRequest {
+  defaultAuthor?: string;
+  serverUrl?: string;
+  force?: boolean;
+}
+
+/**
+ * Réponse d'initialisation globale
+ */
+export interface InitResponse {
+  success: boolean;
+  config: GlobalConfig;
+  message: string;
+  directoryCreated: string;
+}
+
+/**
+ * Informations étendues du serveur
+ */
+export interface ExtendedServerInfo {
+  name: string;
+  version: string;
+  environment: 'local' | 'production';
+  baseUrl: string;
+  status: 'healthy' | 'degraded' | 'down';
+  features: {
+    authentication: boolean;
+    deployments: boolean;
+    templating: boolean;
+    versioning: boolean;
+  };
 } 

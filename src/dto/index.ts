@@ -56,5 +56,10 @@ export {
   LoginResult,
   ApiResponse,
   ServerInfo,
-  DeployAgentRequest as CLIDeployAgentRequest
+  DeployAgentRequest as CLIDeployAgentRequest,
+  // Nouveaux DTOs Phase 3.1
+  GlobalConfig,
+  InitRequest,
+  InitResponse,
+  ExtendedServerInfo
 } from './auth.dto'; 

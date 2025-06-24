@@ -4,6 +4,8 @@ import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { AuthController, InfoController } from './api/auth.controller.js';
 import { ApplicationsController } from './api/applications.controller.js';
 import { AgentsController } from './api/agents.controller.js';
+import { ConfigController } from './api/config.controller.js';
+import { DeploymentController } from './api/deployment.controller.js';
 
 // Services et Middleware
 import { AuthMiddleware } from './api/auth.middleware.js';
@@ -16,7 +18,9 @@ import { IIAMService } from './interfaces/index.js';
     AuthController,
     InfoController,
     ApplicationsController,
-    AgentsController
+    AgentsController,
+    ConfigController,
+    DeploymentController
   ],
   providers: [
     {
