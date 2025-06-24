@@ -2,7 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { 
   ApiResponse, 
   ExtendedServerInfo 
-} from '@/dto/index.js';
+} from '../dto/index.js';
 
 /**
  * ConfigController - Informations serveur étendues

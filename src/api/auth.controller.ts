@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body, Headers, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { IIAMService } from '@/interfaces/index.js';
-import { LoginCredentials, ApiResponse, ServerInfo } from '@/dto/index.js';
+import { IIAMService } from '../interfaces/index.js';
+import { LoginCredentials, ApiResponse, ServerInfo } from '../dto/index.js';
 
 /**
  * Contrôleur d'authentification pour la CLI

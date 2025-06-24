@@ -5,7 +5,7 @@ import {
   Application, 
   CreateApplicationRequest, 
   UpdateApplicationRequest 
-} from '@/dto/index.js';
+} from '../dto/index.js';
 
 /**
  * Interface pour les services de base de données

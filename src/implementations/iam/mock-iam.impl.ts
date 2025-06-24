@@ -1,5 +1,5 @@
-import { IIAMService } from '@/interfaces/index.js';
-import { UserContext, SessionAuthContext, LoginCredentials, LoginResult } from '@/dto/index.js';
+import { IIAMService } from '../../interfaces/index.js';
+import { UserContext, SessionAuthContext, LoginCredentials, LoginResult } from '../../dto/index.js';
 
 /**
  * Implémentation mock du service IAM pour le MVP

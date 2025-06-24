@@ -12,8 +12,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Request } from 'express';
-import { ApiResponse } from '@/dto/index.js';
-import { BundleStorageService, type BundleMetadata } from '@/implementations/storage/bundle-storage.service.js';
+import { ApiResponse } from '../dto/index.js';
+import { BundleStorageService, type BundleMetadata } from '../implementations/storage/bundle-storage.service.js';
 
 // DTOs pour le déploiement (à ajouter dans auth.dto.ts)
 interface UploadBundleRequest {

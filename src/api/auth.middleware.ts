@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
-import { IIAMService } from '@/interfaces/index.js';
-import { UserContext } from '@/dto/index.js';
+import type { Request, Response, NextFunction } from 'express';
+import { IIAMService } from '../interfaces/index.js';
+import { UserContext } from '../dto/index.js';
 
 // Extension de Request pour inclure l'utilisateur
 declare global {

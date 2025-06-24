@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param, Query, Req, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { Request } from 'express';
-import { IIAMService } from '@/interfaces/index.js';
-import { ApiResponse, CLIDeployAgentRequest } from '@/dto/index.js';
+import type { Request } from 'express';
+import { IIAMService } from '../interfaces/index.js';
+import { ApiResponse, CLIDeployAgentRequest } from '../dto/index.js';
 
 /**
  * Interface pour la création d'agent (local)

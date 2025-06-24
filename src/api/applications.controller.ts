@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Delete, Body, Param, Req, HttpException, HttpStatus, Inject } from '@nestjs/common';
-import { Request } from 'express';
-import { IIAMService } from '@/interfaces/index.js';
-import { ApiResponse, Application, CreateApplicationRequest } from '@/dto/index.js';
+import type { Request } from 'express';
+import { IIAMService } from '../interfaces/index.js';
+import { ApiResponse, Application, CreateApplicationRequest } from '../dto/index.js';
 
 /**
  * Contrôleur pour la gestion des applications

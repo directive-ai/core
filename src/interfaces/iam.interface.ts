@@ -1,4 +1,4 @@
-import { UserContext, SessionAuthContext, LoginCredentials, LoginResult } from '@/dto/index.js';
+import { UserContext, SessionAuthContext, LoginCredentials, LoginResult } from '../dto/index.js';
 
 /**
  * Interface pour les services d'authentification et autorisation (IAM)
