@@ -6,6 +6,7 @@ import { ApplicationsController } from './api/applications.controller.js';
 import { AgentsController } from './api/agents.controller.js';
 import { ConfigController } from './api/config.controller.js';
 import { DeploymentController } from './api/deployment.controller.js';
+import { SessionsController } from './api/sessions.controller.js';
 
 // Services et Middleware
 import { AuthMiddleware } from './api/auth.middleware.js';
@@ -21,7 +22,8 @@ import { IIAMService, IDatabaseService } from './interfaces/index.js';
     ApplicationsController,
     AgentsController,
     ConfigController,
-    DeploymentController
+    DeploymentController,
+    SessionsController
   ],
   providers: [
     {

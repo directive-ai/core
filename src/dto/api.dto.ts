@@ -8,6 +8,7 @@ import type { AgentMetadata } from '@directive/types';
 export interface CreateSessionRequest {
   agent_type: string;                     // Type d'agent directeur à instancier
   metadata?: Record<string, any>;         // Métadonnées initiales
+  restore_state?: any;                    // État XState à restaurer (optionnel)
 }
 
 /**
