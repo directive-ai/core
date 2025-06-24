@@ -319,6 +319,42 @@ export class BundleStorageService {
   }
 
   /**
+   * Supprime toutes les versions d'un agent (dossier complet)
+   */
+  async deleteAllVersions(agentId: string): Promise<{
+    success: boolean;
+    deletedVersions: string[];
+    message: string;
+  }> {
+    try {
+      const agentDir = path.join(this.baseDir, 'agents', agentId);
+      
+      if (!existsSync(agentDir)) {
+        throw new Error(`Agent ${agentId} does not exist`);
+      }
+
+      // Récupérer la liste des versions avant suppression
+      const versions = await this.getAgentVersions(agentId);
+      const versionNumbers = versions.map(v => v.version);
+
+      // Supprimer tout le dossier de l'agent
+      await fs.rm(agentDir, { recursive: true });
+
+      return {
+        success: true,
+        deletedVersions: versionNumbers,
+        message: `All versions deleted for agent ${agentId} (${versionNumbers.length} versions)`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        deletedVersions: [],
+        message: `Failed to delete all versions: ${error instanceof Error ? error.message : error}`
+      };
+    }
+  }
+
+  /**
    * Nettoie les anciennes versions (garde les N plus récentes)
    */
   async cleanupOldVersions(agentId: string, keepCount = 5): Promise<{

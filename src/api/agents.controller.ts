@@ -2,6 +2,7 @@ import { Controller, Get, Post, Delete, Body, Param, Query, Req, HttpException, 
 import type { Request } from 'express';
 import { IIAMService, IDatabaseService } from '../interfaces/index.js';
 import { ApiResponse, CLIDeployAgentRequest } from '../dto/index.js';
+import { BundleStorageService } from '../implementations/storage/bundle-storage.service.js';
 
 /**
  * Interface pour la création d'agent (local)
@@ -33,10 +34,14 @@ interface Agent {
  */
 @Controller('api/agents')
 export class AgentsController {
+  private readonly bundleStorage: BundleStorageService;
+
   constructor(
     @Inject('IIAMService') private readonly iamService: IIAMService,
     @Inject('IDatabaseService') private readonly databaseService: IDatabaseService
-  ) {}
+  ) {
+    this.bundleStorage = new BundleStorageService();
+  }
 
   @Get()
   async getAgents(
@@ -217,12 +222,32 @@ export class AgentsController {
         throw new HttpException('Insufficient permissions to delete this agent', HttpStatus.FORBIDDEN);
       }
 
-      // Simulation de la suppression
-      console.log(`Deleting agent: ${nameOrId}`);
+      // 1. Récupérer l'agent pour obtenir son ID
+      const dbAgents = await this.databaseService.getRegisteredAgents();
+      const agent = dbAgents.find(a => a.id === nameOrId || a.name === nameOrId || a.type.endsWith(`/${nameOrId}`));
+      
+      if (!agent) {
+        throw new HttpException(`Agent '${nameOrId}' not found`, HttpStatus.NOT_FOUND);
+      }
+
+      // 2. Supprimer tous les bundles stockés
+      try {
+        const bundleDeleteResult = await this.bundleStorage.deleteAllVersions(agent.id);
+        if (!bundleDeleteResult.success) {
+          console.warn(`Warning: Failed to delete bundles for agent ${agent.id}: ${bundleDeleteResult.message}`);
+        } else {
+          console.log(`Deleted ${bundleDeleteResult.deletedVersions.length} bundle versions for agent ${agent.id}`);
+        }
+      } catch (bundleError) {
+        console.warn(`Warning: Error deleting bundles for agent ${agent.id}:`, bundleError);
+      }
+
+      // 3. Supprimer l'agent de la base de données
+      await this.databaseService.removeAgent(agent.id);
       
       return { 
         success: true,
-        message: `Agent '${nameOrId}' deleted successfully`
+        message: `Agent '${agent.name}' and all its versions deleted successfully`
       };
     } catch (error: any) {
       throw new HttpException(

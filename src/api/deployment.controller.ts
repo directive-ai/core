@@ -2,6 +2,7 @@ import {
   Controller, 
   Post, 
   Get, 
+  Delete,
   Param, 
   Body, 
   UploadedFile, 
@@ -231,7 +232,68 @@ export class DeploymentController {
     } catch (error) {
       return {
         success: false,
-        error: `Erreur lors du rollback: ${error instanceof Error ? error.message : error}`
+        error: `Error during rollback: ${error instanceof Error ? error.message : error}`
+      };
+    }
+  }
+
+  /**
+   * DELETE /api/deployments/agent/:agentId/version/:version
+   * Supprime une version spécifique d'un agent
+   */
+  @Delete('agent/:agentId/version/:version')
+  async deleteAgentVersion(
+    @Param('agentId') agentId: string,
+    @Param('version') version: string
+  ): Promise<ApiResponse<{ deletedVersion: string }>> {
+    try {
+      // TODO: Vérifier les permissions
+      
+      const deleteResult = await this.bundleStorage.deleteVersion(agentId, version);
+      
+      if (!deleteResult.success) {
+        throw new Error(deleteResult.message);
+      }
+      
+      return {
+        success: true,
+        data: { deletedVersion: version },
+        message: deleteResult.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Error deleting version: ${error instanceof Error ? error.message : error}`
+      };
+    }
+  }
+
+  /**
+   * DELETE /api/deployments/agent/:agentId/versions
+   * Supprime toutes les versions d'un agent
+   */
+  @Delete('agent/:agentId/versions')
+  async deleteAllAgentVersions(
+    @Param('agentId') agentId: string
+  ): Promise<ApiResponse<{ deletedVersions: string[] }>> {
+    try {
+      // TODO: Vérifier les permissions
+      
+      const deleteResult = await this.bundleStorage.deleteAllVersions(agentId);
+      
+      if (!deleteResult.success) {
+        throw new Error(deleteResult.message);
+      }
+      
+      return {
+        success: true,
+        data: { deletedVersions: deleteResult.deletedVersions },
+        message: deleteResult.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Error deleting all versions: ${error instanceof Error ? error.message : error}`
       };
     }
   }
